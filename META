@@ -1,0 +1,8 @@
+version = "0.1.0"
+description = "OS X CoreFoundation system library bindings"
+requires = "ctypes.stubs"
+archive(byte) = "cf.cma"
+archive(bytes, plugin) = "cf.cma"
+archive(native) = "cf.cmxa"
+archive(native, plugin) = "cf.cmxs"
+exists_if = "cf.cma"
