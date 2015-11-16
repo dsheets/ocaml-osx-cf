@@ -23,40 +23,35 @@ module C = Cf_bindings.C(Cf_generated)
 
 module String = struct
 
-  let to_chars t =
+  module Encoding = C.CFString.Encoding
+
+  let to_bytes t =
     let n = C.CFString.get_length t in
-    let a = CArray.make char n in
-    let _bool = C.CFString.get_C_string t (CArray.start a) n ascii in
-    a
+    let b = Bytes.create n in
+    let bp = ocaml_bytes_start b in
+    let ok = C.CFString.get_c_string_bytes t bp n Encoding.ASCII in
+    if ok then b else failwith "Cf.String.to_bytes failed"
 
-  let string_of_chars a =
-    (* XXX: how can we do better ? *)
-    let n = Array.length a in
-    let s = String.create n in
-    for i = 0 to n - 1 do s.[i] <- (Array.get a i) done;
-    s
+  let of_bytes b =
+    let n = Bytes.length b in
+    let bp = coerce ocaml_bytes (ptr uint8_t) (ocaml_bytes_start b) in
+    C.CFString.create_with_bytes None bp n Encoding.ASCII false
 
-  let to_string t =
-    string_of_chars (to_chars t)
-
-  let t =
-    view ~read:to_string ~write:of_string _t
-
-  let string_of_ptr p =
-    let t = !@ (from_voidp _t p) in
-    to_string t
+  let bytes = view ~read:to_bytes ~write:of_bytes C.CFString.typ
 
 end
 
 module Array = struct
 
-  let to_array t =
-    let n = get_count t in
-    let r = { CFRange.location = 0; length = n } in
-    Array.from_ptr (get_values t r) n
+  let to_carray t =
+    let n = C.CFArray.get_count t in
+    let r = { C.CFRange.location = 0; length = n } in
+    let m = allocate_n (ptr void) ~count:n in
+    C.CFArray.get_values t r m;
+    CArray.from_ptr m n
 
-    let of_array a =
-      let n = Array.length a in
-      create None (Array.start a) n None
+  let of_carray a =
+    let n = CArray.length a in
+    C.CFArray.create None (CArray.start a) n None
 
 end

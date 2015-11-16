@@ -23,7 +23,6 @@ module Type = Cf_types.C(Cf_types_detected)
 module C(F: Cstubs.FOREIGN) = struct
 
   module CFIndex = struct
-
     (* typedef signed long CFIndex; *)
     let typ = long
 
@@ -32,15 +31,68 @@ module C(F: Cstubs.FOREIGN) = struct
     let to_int = Signed.Long.to_int
 
     let t = view ~read:to_int ~write:of_int typ
-
   end
 
   module CFString = struct
 
+    module Encoding = struct
+      type t =
+        | MacRoman
+        | WindowsLatin1
+        | ISOLatin1
+        | NextStepLatin
+        | ASCII
+        | Unicode
+        | UTF8
+        | NonLossyASCII
+        | UTF16
+        | UTF16BE
+        | UTF16LE
+        | UTF32
+        | UTF32BE
+        | UTF32LE
+
+      let to_uint32 = Type.StringEncoding.(function
+          | MacRoman      -> mac_roman
+          | WindowsLatin1 -> windows_latin1
+          | ISOLatin1     -> iso_latin1
+          | NextStepLatin -> nextstep_latin
+          | ASCII         -> ascii
+          | Unicode       -> unicode
+          | UTF8          -> utf8
+          | NonLossyASCII -> nonlossy_ascii
+          | UTF16         -> utf16
+          | UTF16BE       -> utf16be
+          | UTF16LE       -> utf16le
+          | UTF32         -> utf32
+          | UTF32BE       -> utf32be
+          | UTF32LE       -> utf32le
+        )
+
+      let of_uint32 i = Type.StringEncoding.(
+          if i = mac_roman then MacRoman
+          else if i = windows_latin1 then WindowsLatin1
+          else if i = iso_latin1 then ISOLatin1
+          else if i = nextstep_latin then NextStepLatin
+          else if i = ascii then ASCII
+          else if i = unicode then Unicode
+          else if i = utf8 then UTF8
+          else if i = nonlossy_ascii then NonLossyASCII
+          else if i = utf16 then UTF16
+          else if i = utf16be then UTF16BE
+          else if i = utf16le then UTF16LE
+          else if i = utf32 then UTF32
+          else if i = utf32be then UTF32BE
+          else if i = utf32le then UTF32LE
+          else failwith "CFString.Encoding.of_uint32 unknown code"
+        )
+
+      let t = view ~read:of_uint32 ~write:to_uint32 uint32_t
+
+    end
+
     (* typedef const struct __CFString *CFStringRef; *)
-    type typ__CFString = unit ptr
-    let typ__CFString: typ__CFString typ = ptr void
-    let typ = ptr typ__CFString
+    let typ = typedef (ptr void) "CFStringRef"
 
     (* CFIndex CFStringGetLength (
          CFStringRef theString
@@ -49,30 +101,39 @@ module C(F: Cstubs.FOREIGN) = struct
     let get_length =
       F.foreign "CFStringGetLength" (typ @-> returning CFIndex.t)
 
-    (* CFStringRef CFSTR (
-          const char *cStr
-       );
-    *)
-    let cfstr =
-      F.foreign "CFSTR" (string @-> returning typ)
-
-    let of_string = cfstr
-
     (* Boolean CFStringGetCString (
         CFStringRef theString,
         char *buffer,
         CFIndex bufferSize,
         CFStringEncoding encoding
        ); *)
-    let get_C_string =
+    let get_c_string ocaml_typ =
       F.foreign "CFStringGetCString" (
         typ @->
-        ptr char @->
+        ocaml_typ @->
         CFIndex.t @->
-        Type.Encoding.t @->
+        Encoding.t @->
         returning bool
       )
+    let get_c_string_bytes = get_c_string ocaml_bytes
+    let get_c_string_string = get_c_string ocaml_string
 
+    (* CFStringRef CFStringCreateWithBytes(
+        CFAllocatorRef alloc,
+        const UInt8 *bytes,
+        CFIndex numBytes,
+        CFStringEncoding encoding,
+        Boolean isExternalRepresentation
+       ); *)
+    let create_with_bytes =
+      F.foreign "CFStringCreateWithBytes" (
+        ptr_opt void @->
+        ptr uint8_t @->
+        CFIndex.t @->
+        Encoding.t @->
+        bool @->
+        returning typ
+      )
   end
 
   module CFRange = struct
@@ -84,10 +145,11 @@ module C(F: Cstubs.FOREIGN) = struct
        typedef struct CFRange CFRange;
     *)
     type range
-    let typ : range structure typ = structure "CFRange"
-    let location = field typ "location" CFIndex.t
-    let length = field typ "length" CFIndex.t
-    let () = seal typ
+    let struct_typ : range structure typ = structure "CFRange"
+    let location = field struct_typ "location" CFIndex.t
+    let length = field struct_typ "length" CFIndex.t
+    let () = seal struct_typ
+    let typ : range structure typ = typedef struct_typ "CFRange"
 
     type t = {
       location: int;
@@ -112,9 +174,7 @@ module C(F: Cstubs.FOREIGN) = struct
   module CFArray = struct
 
     (* typedef const struct __CFArray *CFArrayRef; *)
-    type typ__CFArray = unit ptr
-    let typ__CFArray: typ__CFArray typ = ptr void
-    let typ = ptr typ__CFArray
+    let typ = typedef (ptr void) "CFArrayRef"
 
     (* CFIndex CFArrayGetCount (
         CFArrayRef theArray
@@ -133,7 +193,8 @@ module C(F: Cstubs.FOREIGN) = struct
       F.foreign "CFArrayGetValues" (
         typ @->
         CFRange.t @->
-        returning (ptr (ptr void))
+        typedef (ptr (ptr void)) "const void **" @->
+        returning void
       )
 
     (* CFArrayRef CFArrayCreate (
@@ -146,7 +207,7 @@ module C(F: Cstubs.FOREIGN) = struct
     let create =
       F.foreign "CFArrayCreate" (
         ptr_opt void @->
-        ptr (ptr void) @->
+        typedef (ptr (ptr void)) "const void **" @->
         CFIndex.t @->
         ptr_opt void @->
         returning typ)
