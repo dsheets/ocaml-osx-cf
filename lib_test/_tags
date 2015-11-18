@@ -1,0 +1,2 @@
+<*.*>: package(alcotest), package(ctypes.stubs), use_cf_stubs
+

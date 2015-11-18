@@ -1,4 +1,4 @@
-.PHONY: build install uninstall reinstall clean
+.PHONY: build test install uninstall reinstall clean
 
 FINDLIB_NAME=cf
 MOD_NAME=cf
@@ -23,6 +23,10 @@ INSTALL=$(addprefix $(MOD_NAME), $(TYPES)) \
 build:
 	$(OCAMLBUILD) $(PRODUCTS)
 
+test: build
+	$(OCAMLBUILD) lib_test/test.native
+	./test.native
+
 install:
 	ocamlfind install $(FINDLIB_NAME) META \
 		$(addprefix _build/lib/,$(INSTALL)) \
@@ -36,5 +40,5 @@ uninstall:
 reinstall: uninstall install
 
 clean:
-	rm -rf _build
+	ocamlbuild -clean
 	rm -f lib/cf.cm? lib/cf.o

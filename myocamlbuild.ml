@@ -48,9 +48,12 @@ dispatch begin
       "lib_gen/%_bindings.ml" "lib/%_bindings.ml";
 
     flag ["c"; "compile"] & S[A"-ccopt"; A"-I/usr/local/include"];
-    flag ["c"; "ocamlmklib"] & A"-L/usr/local/lib";
+    flag ["c"; "ocamlmklib"] &
+      S[A"-framework"; A"CoreFoundation"; A"-L/usr/local/lib"];
     flag ["ocaml"; "link"; "native"; "program"] &
-      S[A"-cclib"; A"-L/usr/local/lib"];
+      S[A"-cclib"; A"-L/usr/local/lib";
+        A"-cclib"; A("-L"^Unix.getcwd()^"/_build/lib");
+        A"-cclib"; A"-framework"; A"-cclib"; A"CoreFoundation"];
 
     (* Linking cstubs *)
     dep ["c"; "compile"; "use_cf_util"]
@@ -73,6 +76,11 @@ dispatch begin
     flag ["ocaml"; "link"; "byte"; "program"; "use_cf_stubs"] &
       S[A"-dllib"; A"-lcf_stubs"];
     dep ["ocaml"; "link"; "byte"; "program"; "use_cf_stubs"]
+      ["lib/dllcf_stubs"-.-(!Options.ext_dll)];
+
+    flag ["ocaml"; "link"; "native"; "program"; "use_cf_stubs"] &
+      S[A"-cclib"; A"-lcf_stubs"];
+    dep ["ocaml"; "link"; "native"; "program"; "use_cf_stubs"]
       ["lib/libcf_stubs"-.-(!Options.ext_lib)];
 
   | _ -> ()

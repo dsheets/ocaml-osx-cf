@@ -15,40 +15,27 @@
  *
  *)
 
-module String : sig
-  module Encoding : sig
-    type t =
-      | MacRoman
-      | WindowsLatin1
-      | ISOLatin1
-      | NextStepLatin
-      | ASCII
-      | Unicode
-      | UTF8
-      | NonLossyASCII
-      | UTF16
-      | UTF16BE
-      | UTF16LE
-      | UTF32
-      | UTF32BE
-      | UTF32LE
+module CFString = struct
 
-    val t : t Ctypes.typ
-  end
+  let roundtrip () =
+    let s = "Hello, CoreFoundation!" in
+    let cfs = Cf.String.of_bytes (Bytes.of_string s) in
+    let rts = Bytes.to_string (Cf.String.to_bytes cfs) in
+    Alcotest.(check string) "roundtrip" s rts
 
-  type t
-
-  val to_bytes : t -> bytes
-  val of_bytes : bytes -> t
-
-  val bytes : bytes Ctypes.typ
+  let tests = [
+    "roundtrip", `Quick, roundtrip;
+  ]
 end
 
-module Array : sig
-  type t
+let test_cfarray = [
 
-  val to_carray : t -> unit Ctypes.ptr Ctypes.CArray.t
-  val of_carray : unit Ctypes.ptr Ctypes.CArray.t -> t
+]
 
-  val carray : unit Ctypes.ptr Ctypes.CArray.t Ctypes.typ
-end
+let tests = [
+  "CFString", CFString.tests;
+  "CFArray", test_cfarray;
+]
+
+;;
+Alcotest.run "CoreFoundation" tests

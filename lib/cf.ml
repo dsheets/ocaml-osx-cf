@@ -21,27 +21,50 @@ open Ctypes
 module Type = Cf_types.C(Cf_types_detected)
 module C = Cf_bindings.C(Cf_generated)
 
+let uint8_0 = Unsigned.UInt8.zero
+
+module Allocator = struct
+  let allocate size =
+    C.CFAllocator.allocate None size (Unsigned.ULLong.of_int 0)
+end
+
 module String = struct
 
   module Encoding = C.CFString.Encoding
 
+  type t = unit ptr
+
+  let ascii = Encoding.ASCII
+
   let to_bytes t =
     let n = C.CFString.get_length t in
-    let b = Bytes.create n in
-    let bp = ocaml_bytes_start b in
-    let ok = C.CFString.get_c_string_bytes t bp n Encoding.ASCII in
-    if ok then b else failwith "Cf.String.to_bytes failed"
+    let r = C.CFRange.({ location = 0; length = n }) in
+    let size_ptr = allocate_n C.CFIndex.t ~count:1 in
+    let size = Some size_ptr in
+    let chars = C.CFString.get_bytes_ptr t r ascii uint8_0 false None 0 size in
+    if chars = 0
+    then failwith "Cf.String.to_bytes failed"
+    else
+      let size = !@size_ptr in
+      let b = Bytes.create size in
+      let bp = ocaml_bytes_start b in
+      let _ =
+        C.CFString.get_bytes_bytes t r ascii uint8_0 false bp size None
+      in
+      b
 
   let of_bytes b =
     let n = Bytes.length b in
-    let bp = coerce ocaml_bytes (ptr uint8_t) (ocaml_bytes_start b) in
-    C.CFString.create_with_bytes None bp n Encoding.ASCII false
+    let bp = ocaml_bytes_start b in
+    C.CFString.create_with_bytes_bytes None bp n Encoding.ASCII false
 
   let bytes = view ~read:to_bytes ~write:of_bytes C.CFString.typ
 
 end
 
 module Array = struct
+
+  type t = unit ptr
 
   let to_carray t =
     let n = C.CFArray.get_count t in
@@ -54,4 +77,5 @@ module Array = struct
     let n = CArray.length a in
     C.CFArray.create None (CArray.start a) n None
 
+  let carray = view ~read:to_carray ~write:of_carray C.CFArray.typ
 end

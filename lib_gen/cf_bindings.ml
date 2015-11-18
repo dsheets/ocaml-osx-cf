@@ -22,6 +22,13 @@ module Type = Cf_types.C(Cf_types_detected)
 
 module C(F: Cstubs.FOREIGN) = struct
 
+  let memcpy_bytes = F.foreign "memcpy" (
+      ptr void @->
+      ocaml_bytes @->
+      size_t   @->
+      returning (ptr void)
+    )
+
   module CFIndex = struct
     (* typedef signed long CFIndex; *)
     let typ = long
@@ -31,6 +38,88 @@ module C(F: Cstubs.FOREIGN) = struct
     let to_int = Signed.Long.to_int
 
     let t = view ~read:to_int ~write:of_int typ
+  end
+
+  module CFAllocator = struct
+    (*
+    type t =
+      | Default
+      | SystemDefault
+      | Malloc
+      | MallocZone
+      | Null
+      | UseContext
+
+    let to_ptr = Type.Allocator.(function
+        | Default       -> default
+        | SystemDefault -> system_default
+        | Malloc        -> malloc
+        | MallocZone    -> malloc_zone
+        | Null          -> null
+        | UseContext    -> use_context
+      )
+
+    let of_ptr p = Type.Allocator.(
+        if p = default then Default
+        else if p = system_default then SystemDefault
+        else if p = malloc then Malloc
+        else if p = malloc_zone then MallocZone
+        else if p = null then Null
+        else if p = use_context then UseContext
+        else failwith "CFAllocator.of_ptr unknown pointer"
+      )
+
+    let t = view ~read:of_ptr ~write:to_ptr (ptr void)
+     *)
+
+    (* void *CFAllocatorAllocate(
+         CFAllocatorRef allocator,
+         CFIndex size,
+         CFOptionFlags hint
+       ); *)
+    let allocate =
+      F.foreign "CFAllocatorAllocate" (
+        ptr_opt void @->
+        CFIndex.t @->
+        ullong @->
+        returning (ptr void)
+      )
+
+  end
+
+  module CFRange = struct
+
+    (* struct CFRange {
+         CFIndex location;
+         CFIndex length;
+       };
+       typedef struct CFRange CFRange;
+    *)
+    type range
+    let struct_typ : range structure typ = structure "CFRange"
+    let location = field struct_typ "location" CFIndex.t
+    let length = field struct_typ "length" CFIndex.t
+    let () = seal struct_typ
+    let typ : range structure typ = typedef struct_typ "CFRange"
+
+    type t = {
+      location: int;
+      length: int;
+    }
+
+    let of_t { location = loc; length = len } =
+      let t = make typ in
+      setf t location loc;
+      setf t length len;
+      t
+
+    let to_t t =
+      let location = getf t location in
+      let length = getf t length in
+      { location; length }
+
+    let t = view ~read:to_t ~write:of_t typ
+
   end
 
   module CFString = struct
@@ -118,6 +207,32 @@ module C(F: Cstubs.FOREIGN) = struct
     let get_c_string_bytes = get_c_string ocaml_bytes
     let get_c_string_string = get_c_string ocaml_string
 
+    (* CFIndex CFStringGetBytes(
+         CFStringRef theString,
+         CFRange range,
+         CFStringEncoding encoding,
+         UInt8 lossByte,
+         Boolean isExternalRepresentation,
+         UInt8 *buffer,
+         CFIndex maxBufLen,
+         CFIndex *usedBufLen
+       ); *)
+    let get_bytes buf_typ =
+      F.foreign "CFStringGetBytes" (
+        typ @->
+        CFRange.t @->
+        Encoding.t @->
+        uint8_t @->
+        bool @->
+        buf_typ @->
+        CFIndex.t @->
+        ptr_opt CFIndex.t @->
+        returning CFIndex.t
+      )
+    let get_bytes_ptr = get_bytes (ptr_opt uint8_t)
+    let get_bytes_bytes = get_bytes ocaml_bytes
+    let get_bytes_string = get_bytes ocaml_string
+
     (* CFStringRef CFStringCreateWithBytes(
         CFAllocatorRef alloc,
         const UInt8 *bytes,
@@ -125,49 +240,36 @@ module C(F: Cstubs.FOREIGN) = struct
         CFStringEncoding encoding,
         Boolean isExternalRepresentation
        ); *)
-    let create_with_bytes =
+    let create_with_bytes ocaml_typ =
       F.foreign "CFStringCreateWithBytes" (
         ptr_opt void @->
-        ptr uint8_t @->
+        ocaml_typ @->
         CFIndex.t @->
         Encoding.t @->
         bool @->
         returning typ
       )
-  end
+    let create_with_bytes_bytes = create_with_bytes ocaml_bytes
+    let create_with_bytes_string = create_with_bytes ocaml_string
 
-  module CFRange = struct
-
-    (* struct CFRange {
-         CFIndex location;
-         CFIndex length;
-       };
-       typedef struct CFRange CFRange;
-    *)
-    type range
-    let struct_typ : range structure typ = structure "CFRange"
-    let location = field struct_typ "location" CFIndex.t
-    let length = field struct_typ "length" CFIndex.t
-    let () = seal struct_typ
-    let typ : range structure typ = typedef struct_typ "CFRange"
-
-    type t = {
-      location: int;
-      length: int;
-    }
-
-    let of_t { location = loc; length = len } =
-      let t = make typ in
-      setf t location loc;
-      setf t length len;
-      t
-
-    let to_t t =
-      let location = getf t location in
-      let length = getf t length in
-      { location; length }
-
-    let t = view ~read:to_t ~write:of_t typ
+    (* CFStringRef CFStringCreateWithBytesNoCopy(
+        CFAllocatorRef alloc,
+        const UInt8 *bytes,
+        CFIndex numBytes,
+        CFStringEncoding encoding,
+        Boolean isExternalRepresentation,
+        CFAllocatorRef contentsDeallocator
+       ); *)
+    let create_with_bytes_no_copy =
+      F.foreign "CFStringCreateWithBytesNoCopy" (
+        ptr_opt void @->
+        ptr uint8_t @->
+        CFIndex.t @->
+        Encoding.t @->
+        bool @->
+        ptr_opt void @->
+        returning typ
+      )
 
   end
 
@@ -218,29 +320,6 @@ module C(F: Cstubs.FOREIGN) = struct
 
     (* typedef double CFTimeInterval; *)
     let t = double
-
-  end
-
-  module CFAllocate = struct
-
-    (* typedef void ( *CFAllocatorReleaseCallBack) (
-       const void *info
-       );
-    *)
-    let release_callback = Foreign.funptr (ptr void @-> returning void)
-
-    (* typedef const void *( *CFAllocatorRetainCallBack) (
-       const void *info
-       );
-    *)
-    let retain_callback = Foreign.funptr (ptr void @-> returning (ptr void))
-
-    (* typedef CFStringRef ( *CFAllocatorCopyDescriptionCallBack) (
-       const void *info
-       );
-    *)
-    let copy_description_callback =
-      Foreign.funptr (ptr void @-> returning CFString.typ)
 
   end
 
