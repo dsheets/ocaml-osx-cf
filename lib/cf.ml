@@ -21,6 +21,8 @@ open Ctypes
 module Type = Cf_types.C(Cf_types_detected)
 module C = Cf_bindings.C(Cf_generated)
 
+module CamlBytes = Bytes
+
 module type PTR_TYP = sig
 
   type t
@@ -77,6 +79,18 @@ module String = struct
       C.CFString.create_with_bytes_bytes None bp n Encoding.ASCII false
 
     let typ = view ~read:to_bytes ~write:of_bytes C.CFString.typ
+
+  end
+
+  module String = struct
+
+    type t = string
+
+    let to_string t = CamlBytes.to_string (Bytes.to_bytes t)
+
+    let of_string s = Bytes.of_bytes (CamlBytes.of_string s)
+
+    let typ = view ~read:to_string ~write:of_string C.CFString.typ
 
   end
 

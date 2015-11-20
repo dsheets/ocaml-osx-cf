@@ -58,6 +58,17 @@ module String : sig
     include PTR_TYP with type t := t
   end
 
+  module String : sig
+    type t = string
+
+    val to_string : cfstring -> t
+    val of_string : t -> cfstring
+
+    val typ : t Ctypes.typ
+
+    include PTR_TYP with type t := t
+  end
+
   include PTR_TYP with type t := t
 
 end
