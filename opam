@@ -1,5 +1,5 @@
 opam-version: "1.2"
-name: "cf"
+name: "osx-cf"
 version: "0.1.0"
 maintainer: "sheets@alum.mit.edu"
 authors: ["David Sheets" "Thomas Gazagnaire"]
@@ -18,5 +18,6 @@ depends: [
   "ocamlfind" {build}
   "alcotest" {test}
   "ctypes" {>= "0.4.0"}
+  "ctypes-foreign"
 ]
 available: [os = "darwin"]

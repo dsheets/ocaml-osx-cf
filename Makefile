@@ -1,6 +1,6 @@
 .PHONY: build test install uninstall reinstall clean
 
-FINDLIB_NAME=cf
+FINDLIB_NAME=osx-cf
 MOD_NAME=cf
 
 OCAML_LIB_DIR=$(shell ocamlc -where)
