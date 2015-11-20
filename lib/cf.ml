@@ -121,6 +121,47 @@ module Array = struct
 
   end
 
+  module List = struct
+
+    module Make(T : PTR_TYP) = struct
+
+      type t = T.t list
+
+      module CArrayM = CArray.Make(T)
+
+      let read t =
+        let n = Ctypes.CArray.length t in
+        let list = ref [] in
+        for i = 0 to n do
+          list := Ctypes.CArray.get t i :: !list
+        done;
+        List.rev !list
+
+      let write list =
+        let count = List.length list in
+        let m = allocate_n T.typ ~count in
+        ignore (List.fold_left (fun p next ->
+          p <-@ next;
+          p +@ 1
+        ) m list);
+        Ctypes.CArray.from_ptr m count
+
+      let typ = view ~read ~write CArrayM.typ
+
+    end
+
+    module VoidPtrList = Make(VoidPtr)
+
+    type t = VoidPtrList.t
+
+    let to_list cf = VoidPtrList.read (CArray.to_carray cf)
+
+    let of_list list = CArray.of_carray (VoidPtrList.write list)
+
+    let typ = VoidPtrList.typ
+
+  end
+
 end
 
 module Index = struct

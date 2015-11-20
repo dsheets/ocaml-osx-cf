@@ -81,6 +81,21 @@ module Array : sig
     include PTR_TYP with type t := t
   end
 
+  module List : sig
+    type t = unit Ctypes.ptr list
+
+    val to_list : cfarray -> t
+    val of_list : t -> cfarray
+
+    val typ : t Ctypes.typ
+
+    module Make(T : PTR_TYP) : sig
+      include PTR_TYP with type t = T.t list
+    end
+
+    include PTR_TYP with type t := t
+  end
+
 end
 
 module Index : sig
