@@ -1,2 +1,2 @@
-<*.*>: package(alcotest), package(ctypes.stubs), use_cf_stubs
+<*.*>: package(alcotest), package(ctypes.stubs), package(ctypes.foreign), use_cf_stubs
 

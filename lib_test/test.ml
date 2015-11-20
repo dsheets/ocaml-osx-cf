@@ -19,8 +19,8 @@ module CFString = struct
 
   let roundtrip () =
     let s = "Hello, CoreFoundation!" in
-    let cfs = Cf.String.of_bytes (Bytes.of_string s) in
-    let rts = Bytes.to_string (Cf.String.to_bytes cfs) in
+    let cfs = Cf.String.Bytes.of_bytes (Bytes.of_string s) in
+    let rts = Bytes.to_string (Cf.String.Bytes.to_bytes cfs) in
     Alcotest.(check string) "roundtrip" s rts
 
   let tests = [
