@@ -23,11 +23,11 @@ module Type = Cf_types.C(Cf_types_detected)
 module C(F: Cstubs.FOREIGN) = struct
 
   let memcpy_bytes = F.foreign "memcpy" (
-      ptr void @->
-      ocaml_bytes @->
-      size_t   @->
-      returning (ptr void)
-    )
+    ptr void @->
+    ocaml_bytes @->
+    size_t   @->
+    returning (ptr void)
+  )
 
   module CFIndex = struct
     (* typedef signed long CFIndex; *)
@@ -142,39 +142,39 @@ module C(F: Cstubs.FOREIGN) = struct
         | UTF32LE
 
       let to_uint32 = Type.StringEncoding.(function
-          | MacRoman      -> mac_roman
-          | WindowsLatin1 -> windows_latin1
-          | ISOLatin1     -> iso_latin1
-          | NextStepLatin -> nextstep_latin
-          | ASCII         -> ascii
-          | Unicode       -> unicode
-          | UTF8          -> utf8
-          | NonLossyASCII -> nonlossy_ascii
-          | UTF16         -> utf16
-          | UTF16BE       -> utf16be
-          | UTF16LE       -> utf16le
-          | UTF32         -> utf32
-          | UTF32BE       -> utf32be
-          | UTF32LE       -> utf32le
-        )
+        | MacRoman      -> mac_roman
+        | WindowsLatin1 -> windows_latin1
+        | ISOLatin1     -> iso_latin1
+        | NextStepLatin -> nextstep_latin
+        | ASCII         -> ascii
+        | Unicode       -> unicode
+        | UTF8          -> utf8
+        | NonLossyASCII -> nonlossy_ascii
+        | UTF16         -> utf16
+        | UTF16BE       -> utf16be
+        | UTF16LE       -> utf16le
+        | UTF32         -> utf32
+        | UTF32BE       -> utf32be
+        | UTF32LE       -> utf32le
+      )
 
       let of_uint32 i = Type.StringEncoding.(
-          if i = mac_roman then MacRoman
-          else if i = windows_latin1 then WindowsLatin1
-          else if i = iso_latin1 then ISOLatin1
-          else if i = nextstep_latin then NextStepLatin
-          else if i = ascii then ASCII
-          else if i = unicode then Unicode
-          else if i = utf8 then UTF8
-          else if i = nonlossy_ascii then NonLossyASCII
-          else if i = utf16 then UTF16
-          else if i = utf16be then UTF16BE
-          else if i = utf16le then UTF16LE
-          else if i = utf32 then UTF32
-          else if i = utf32be then UTF32BE
-          else if i = utf32le then UTF32LE
-          else failwith "CFString.Encoding.of_uint32 unknown code"
-        )
+        if i = mac_roman then MacRoman
+        else if i = windows_latin1 then WindowsLatin1
+        else if i = iso_latin1 then ISOLatin1
+        else if i = nextstep_latin then NextStepLatin
+        else if i = ascii then ASCII
+        else if i = unicode then Unicode
+        else if i = utf8 then UTF8
+        else if i = nonlossy_ascii then NonLossyASCII
+        else if i = utf16 then UTF16
+        else if i = utf16be then UTF16BE
+        else if i = utf16le then UTF16LE
+        else if i = utf32 then UTF32
+        else if i = utf32be then UTF32BE
+        else if i = utf32le then UTF32LE
+        else failwith "CFString.Encoding.of_uint32 unknown code"
+      )
 
       let t = view ~read:of_uint32 ~write:to_uint32 uint32_t
 
@@ -182,6 +182,8 @@ module C(F: Cstubs.FOREIGN) = struct
 
     (* typedef const struct __CFString *CFStringRef; *)
     let typ = typedef (ptr void) "CFStringRef"
+
+    let const_typ = typedef typ "const CFStringRef"
 
     (* CFIndex CFStringGetLength (
          CFStringRef theString
@@ -270,6 +272,29 @@ module C(F: Cstubs.FOREIGN) = struct
         ptr_opt void @->
         returning typ
       )
+
+  end
+
+  module CFRunLoop = struct
+
+    module Mode = struct
+
+      let default = F.foreign_value "kCFRunLoopDefaultMode" CFString.const_typ
+      let common_modes =
+        F.foreign_value "kCFRunLoopCommonModes" CFString.const_typ
+
+    end
+
+    (* typedef struct CF_BRIDGED_MUTABLE_TYPE(id) __CFRunLoop * CFRunLoopRef; *)
+    let typ = typedef (ptr void) "CFRunLoopRef"
+
+    let get_current = F.foreign "CFRunLoopGetCurrent" (
+      void @-> returning typ
+    )
+
+    let run = F.foreign "CFRunLoopRun" (
+      void @-> returning void
+    )
 
   end
 
