@@ -2,7 +2,16 @@ version = "0.1.0"
 description = "OS X CoreFoundation system library bindings"
 requires = "ctypes.stubs ctypes.foreign"
 archive(byte) = "cf.cma"
-archive(bytes, plugin) = "cf.cma"
+archive(byte, plugin) = "cf.cma"
 archive(native) = "cf.cmxa"
 archive(native, plugin) = "cf.cmxs"
 exists_if = "cf.cma"
+
+package "lwt" (
+  requires = "osx-cf lwt.preemptive"
+  archive(byte) = "cf_lwt.cma"
+  archive(byte, plugin) = "cf_lwt.cma"
+  archive(native) = "cf_lwt.cmxa"
+  archive(native, plugin) = "cf_lwt.cmxs"
+  exists_if = "cf_lwt.cma"
+)

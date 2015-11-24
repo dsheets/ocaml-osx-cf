@@ -17,7 +17,11 @@ remove: [make "uninstall"]
 depends: [
   "ocamlfind" {build}
   "alcotest" {test}
+  "base-bytes"
   "ctypes" {>= "0.4.0"}
   "ctypes-foreign"
+]
+depopts: [
+  "lwt"
 ]
 available: [os = "darwin"]
