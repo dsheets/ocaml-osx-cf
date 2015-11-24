@@ -29,6 +29,14 @@ module C(F: Cstubs.FOREIGN) = struct
     returning (ptr void)
   )
 
+  module CFType = struct
+    let typ = typedef (ptr void) "CFTypeRef"
+
+    let retain = F.foreign "CFRetain" (typ @-> returning typ)
+
+    let release = F.foreign "CFRelease" (typ @-> returning void)
+  end
+
   module CFIndex = struct
     (* typedef signed long CFIndex; *)
     let typ = long

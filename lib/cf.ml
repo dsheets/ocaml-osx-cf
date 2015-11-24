@@ -18,7 +18,7 @@
 
 open Ctypes
 
-module Type = Cf_types.C(Cf_types_detected)
+module Types = Cf_types.C(Cf_types_detected)
 module C = Cf_bindings.C(Cf_generated)
 
 module CamlBytes = Bytes
@@ -28,6 +28,14 @@ module type PTR_TYP = sig
   type t
 
   val typ : t typ
+
+end
+
+module Type = struct
+
+  let release = C.CFType.release
+
+  let retain = C.CFType.retain
 
 end
 
@@ -76,7 +84,10 @@ module String = struct
     let of_bytes b =
       let n = Bytes.length b in
       let bp = ocaml_bytes_start b in
-      C.CFString.create_with_bytes_bytes None bp n Encoding.ASCII false
+      let open C.CFString in
+      let cf = create_with_bytes_bytes None bp n Encoding.ASCII false in
+      Gc.finalise Type.release cf;
+      cf
 
     let typ = view ~read:to_bytes ~write:of_bytes C.CFString.typ
 
@@ -117,7 +128,10 @@ module Array = struct
       let write a =
         let n = CArray.length a in
         let p = CArray.start a in
-        C.CFArray.create None (coerce (ptr T.typ) (ptr (ptr void)) p) n None
+        let open C.CFArray in
+        let cf = create None (coerce (ptr T.typ) (ptr (ptr void)) p) n None in
+        Gc.finalise Type.release cf;
+        cf
 
       let typ = view ~read ~write C.CFArray.typ
 
@@ -240,6 +254,10 @@ module RunLoop = struct
 
   let run = C.CFRunLoop.run
 
-  let get_current () : t = C.CFRunLoop.get_current ()
+  let get_current () : t =
+    let cf = C.CFRunLoop.get_current () in
+    let cf = Type.retain cf in
+    Gc.finalise Type.release cf;
+    cf
 
 end
