@@ -23,6 +23,11 @@ module type PTR_TYP = sig
 
 end
 
+module Type : sig
+  val release : unit Ctypes.ptr -> unit
+  val retain : unit Ctypes.ptr -> unit Ctypes.ptr
+end
+
 module String : sig
   module Encoding : sig
     type t =
