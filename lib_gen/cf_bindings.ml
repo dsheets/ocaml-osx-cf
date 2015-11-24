@@ -292,7 +292,7 @@ module C(F: Cstubs.FOREIGN) = struct
       void @-> returning typ
     )
 
-    let run = F.foreign "CFRunLoopRun" (
+    let run = F.foreign "osx_cf_run_loop_run" (
       void @-> returning void
     )
 

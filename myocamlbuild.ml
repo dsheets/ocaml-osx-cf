@@ -57,7 +57,7 @@ dispatch begin
 
     (* Linking cstubs *)
     dep ["c"; "compile"; "use_cf_util"]
-      ["lib/cf_util.o"; "lib/cf_util.h"];
+      ["lib/osx_cf_util.o"; "lib/osx_cf_util.h"];
     flag ["c"; "compile"; "use_ctypes"] & S[A"-I"; A ctypes_libdir];
     flag ["c"; "compile"; "debug"] & A"-g";
 

@@ -22,6 +22,7 @@ let () =
   let stubs_oc = open_out "lib/cf_stubs.c" in
   let fmt = Format.formatter_of_out_channel stubs_oc in
   Format.fprintf fmt "#include <CoreFoundation/CoreFoundation.h>@.";
+  Format.fprintf fmt "#include \"osx_cf_util.h\"@.";
   Cstubs.write_c fmt ~prefix (module Cf_bindings.C);
   close_out stubs_oc;
 
