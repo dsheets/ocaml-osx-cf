@@ -283,6 +283,13 @@ module C(F: Cstubs.FOREIGN) = struct
 
   end
 
+  module CFTimeInterval = struct
+
+    (* typedef double CFTimeInterval; *)
+    let typ = double
+
+  end
+
   module CFRunLoop = struct
 
     module Mode = struct
@@ -293,8 +300,152 @@ module C(F: Cstubs.FOREIGN) = struct
 
     end
 
+    module Observer = struct
+
+      let typ = typedef (ptr void) "CFRunLoopObserverRef"
+
+      module Activity = struct
+        type t =
+          | Entry
+          | BeforeTimers
+          | BeforeSources
+          | BeforeWaiting
+          | AfterWaiting
+          | Exit
+        type select =
+          | Only of t list
+          | All
+
+        let to_ullong = Type.RunLoopActivity.(function
+            | Entry -> entry
+            | BeforeTimers -> before_timers
+            | BeforeSources -> before_sources
+            | BeforeWaiting -> before_waiting
+            | AfterWaiting -> after_waiting
+            | Exit -> exit
+          )
+
+        let of_ullong i = Type.RunLoopActivity.(
+            if i = entry then Entry
+            else if i = before_timers then BeforeTimers
+            else if i = before_sources then BeforeSources
+            else if i = before_waiting then BeforeWaiting
+            else if i = after_waiting then AfterWaiting
+            else if i = exit then Exit
+            else failwith "CFRunLoop.Observer.Activity.of_ullong unknown code"
+          )
+
+        let typ = typedef (
+            view ~read:of_ullong ~write:to_ullong ullong
+          ) "CFRunLoopActivity"
+
+        let select u ullong activity p =
+          if compare Unsigned.ULLong.Infix.(u land ullong) ullong = 0
+          then activity::p
+          else p
+
+        let select_of_ullong u =
+          if u = Type.RunLoopActivity.all_activities
+          then All
+          else Only Unsigned.ULLong.(Infix.(Type.RunLoopActivity.(
+              let p = select u entry Entry [] in
+              let p = select u before_timers BeforeTimers p in
+              let p = select u before_sources BeforeSources p in
+              let p = select u before_waiting BeforeWaiting p in
+              let p = select u after_waiting AfterWaiting p in
+              select u exit Exit p
+            )))
+
+        let select_to_ullong = function
+          | Only activities ->
+            Unsigned.ULLong.(List.fold_left (fun x activity ->
+                logor x (to_ullong activity)
+              ) zero activities)
+          | All -> Type.RunLoopActivity.all_activities
+
+        let select_typ =
+          view ~read:select_of_ullong ~write:select_to_ullong ullong
+      end
+
+      module Callback = struct
+
+        (* typedef void ( *CFRunLoopObserverCallBack)(
+             CFRunLoopObserverRef observer,
+             CFRunLoopActivity activity,
+             void *info
+           ); *)
+        let typ =
+          Foreign.funptr ~runtime_lock:true ~name:"CFRunLoopObserverCallBack" (
+            typ @->
+            Activity.typ @->
+            ptr void @->
+            returning void
+          )
+
+      end
+
+      module Context = struct
+        let typ = typedef (ptr void) "CFRunLoopObserverContext"
+      end
+
+      (* CFRunLoopObserverRef CFRunLoopObserverCreate(
+           CFAllocatorRef allocator,
+           CFOptionFlags activities,
+           Boolean repeats,
+           CFIndex order,
+           CFRunLoopObserverCallBack callout,
+           CFRunLoopObserverContext *context
+         ); *)
+      let create = F.foreign "CFRunLoopObserverCreate" (
+          ptr_opt void @->
+          Activity.select_typ @->
+          bool @->
+          CFIndex.t @->
+          Callback.typ @->
+          ptr_opt Context.typ @->
+          returning typ
+        )
+    end
+
+    module RunResult = struct
+      type t =
+        | Finished
+        | Stopped
+        | TimedOut
+        | HandledSource
+
+      let to_int32 = Type.RunLoopRunResult.(function
+          | Finished -> finished
+          | Stopped -> stopped
+          | TimedOut -> timed_out
+          | HandledSource -> handled_source
+        )
+
+      let of_int32 i = Type.RunLoopRunResult.(
+          if i = finished then Finished
+          else if i = stopped then Stopped
+          else if i = timed_out then TimedOut
+          else if i = handled_source then HandledSource
+          else failwith "CFRunLoop.RunResult.of_int32 unknown code"
+        )
+
+      let typ = view ~read:of_int32 ~write:to_int32 int32_t
+    end
+
     (* typedef struct CF_BRIDGED_MUTABLE_TYPE(id) __CFRunLoop * CFRunLoopRef; *)
     let typ = typedef (ptr void) "CFRunLoopRef"
+
+    (* void CFRunLoopAddObserver(
+         CFRunLoopRef rl,
+         CFRunLoopObserverRef observer,
+         CFStringRef mode
+       ); *)
+    let add_observer = F.foreign "CFRunLoopAddObserver" (
+        typ @->
+        Observer.typ @->
+        CFString.typ @->
+        returning void
+      )
 
     let get_current = F.foreign "CFRunLoopGetCurrent" (
       void @-> returning typ
@@ -303,6 +454,18 @@ module C(F: Cstubs.FOREIGN) = struct
     let run = F.foreign "osx_cf_run_loop_run" (
       void @-> returning void
     )
+
+    (* CFRunLoopRunResult CFRunLoopRunInMode(
+         CFStringRef mode,
+         CFTimeInterval seconds,
+         Boolean returnAfterSourceHandled
+       ); *)
+    let run_in_mode = F.foreign "osx_cf_run_loop_run_in_mode" (
+        CFString.typ @->
+        CFTimeInterval.typ @->
+        bool @->
+        returning RunResult.typ
+      )
 
   end
 
@@ -346,13 +509,6 @@ module C(F: Cstubs.FOREIGN) = struct
         CFIndex.t @->
         ptr_opt void @->
         returning typ)
-
-  end
-
-  module CFTimeInterval = struct
-
-    (* typedef double CFTimeInterval; *)
-    let t = double
 
   end
 

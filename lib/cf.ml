@@ -204,7 +204,7 @@ module TimeInterval = struct
 
   type t = float
 
-  let typ = C.CFTimeInterval.t
+  let typ = C.CFTimeInterval.typ
 
 end
 
@@ -224,6 +224,9 @@ module Allocator = struct
 end
 
 module RunLoop = struct
+
+  type t = unit ptr
+  type runloop = t
 
   module Mode = struct
     type t =
@@ -248,11 +251,52 @@ module RunLoop = struct
 
   end
 
-  type t = unit ptr
+  module Observer = struct
+    module Activity = struct
+      include C.CFRunLoop.Observer.Activity
+
+      let to_string = function
+        | Entry -> "Entry"
+        | BeforeTimers -> "BeforeTimers"
+        | BeforeSources -> "BeforeSources"
+        | BeforeWaiting -> "BeforeWaiting"
+        | AfterWaiting -> "AfterWaiting"
+        | Exit -> "Exit"
+    end
+
+    module Callback = struct
+      type t = runloop -> Activity.t -> unit
+    end
+
+    type t = unit ptr
+
+    let create activities ?(repeats=true) ?(order=0) callback =
+      (* TODO: GC *)
+      let callback runloop activity _info = callback runloop activity in
+      C.CFRunLoop.Observer.(create None activities repeats order callback None)
+
+  end
+
+  module RunResult = struct
+    include C.CFRunLoop.RunResult
+
+    let to_string = function
+      | Finished -> "Finished"
+      | Stopped -> "Stopped"
+      | TimedOut -> "TimedOut"
+      | HandledSource -> "HandledSource"
+  end
 
   let typ = C.CFRunLoop.typ
 
+  let add_observer runloop observer mode =
+    C.CFRunLoop.add_observer runloop observer (Mode.to_cfstring mode)
+
   let run = C.CFRunLoop.run
+
+  let run_in_mode ?(return_after_source_handled=false) ?(seconds=0.) mode =
+    let mode = Mode.to_cfstring mode in
+    C.CFRunLoop.run_in_mode mode seconds return_after_source_handled
 
   let get_current () : t =
     let cf = C.CFRunLoop.get_current () in

@@ -136,6 +136,9 @@ end
 
 module RunLoop : sig
 
+  type t
+  type runloop = t
+
   module Mode : sig
     type t =
       | Default
@@ -146,11 +149,53 @@ module RunLoop : sig
 
   end
 
-  type t
+  module Observer : sig
+    module Activity : sig
+      type t =
+        | Entry
+        | BeforeTimers
+        | BeforeSources
+        | BeforeWaiting
+        | AfterWaiting
+        | Exit
+      type select =
+        | Only of t list
+        | All
+
+      val to_string : t -> string
+    end
+
+    module Callback : sig
+      type t = runloop -> Activity.t -> unit
+    end
+
+    type t
+
+    val create :
+      Activity.select -> ?repeats:bool -> ?order:int -> Callback.t -> t
+  end
+
+  module RunResult : sig
+    type t =
+      | Finished
+      | Stopped
+      | TimedOut
+      | HandledSource
+
+    val typ : t Ctypes.typ
+
+    val to_string : t -> string
+  end
 
   val typ : t Ctypes.typ
 
+  val add_observer : t -> Observer.t -> Mode.t -> unit
+
   val run : unit -> unit
+
+  val run_in_mode :
+    ?return_after_source_handled:bool -> ?seconds:float -> Mode.t ->
+    RunResult.t
 
   val get_current : unit -> t
 

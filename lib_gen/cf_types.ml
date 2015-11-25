@@ -39,4 +39,25 @@ module C(F: Cstubs.Types.TYPE) = struct
 
   end
 
+  module RunLoopActivity = struct
+    let t = F.ullong
+
+    let entry          = F.constant "kCFRunLoopEntry" t
+    let before_timers  = F.constant "kCFRunLoopBeforeTimers" t
+    let before_sources = F.constant "kCFRunLoopBeforeSources" t
+    let before_waiting = F.constant "kCFRunLoopBeforeWaiting" t
+    let after_waiting  = F.constant "kCFRunLoopAfterWaiting" t
+    let exit           = F.constant "kCFRunLoopExit" t
+    let all_activities = F.constant "kCFRunLoopAllActivities" t
+  end
+
+  module RunLoopRunResult = struct
+    let t = F.int32_t
+
+    let finished       = F.constant "kCFRunLoopRunFinished" t
+    let stopped        = F.constant "kCFRunLoopRunStopped" t
+    let timed_out      = F.constant "kCFRunLoopRunTimedOut" t
+    let handled_source = F.constant "kCFRunLoopRunHandledSource" t
+  end
+
 end
