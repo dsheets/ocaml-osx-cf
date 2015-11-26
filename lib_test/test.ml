@@ -17,19 +17,38 @@
 
 module CFString = struct
 
-  let roundtrip () =
-    let s = "Hello, CoreFoundation!" in
+  let roundtrip_string name s =
     let cfs = Cf.String.Bytes.of_bytes (Bytes.of_string s) in
     let rts = Bytes.to_string (Cf.String.Bytes.to_bytes cfs) in
-    Alcotest.(check string) "roundtrip" s rts
+    Alcotest.(check string) ("roundtrip "^name) s rts
+
+  let roundtrip () =
+    roundtrip_string "empty"    "";
+    roundtrip_string "nonempty" "Hello, CoreFoundation!";
+    ()
 
   let tests = [
-    "roundtrip", `Quick, roundtrip;
+      "roundtrip", `Quick, roundtrip;
   ]
 end
 
 module CFArray = struct
+
+  module StringList = Cf.Array.List.Make(Cf.String.String)
+
+  let roundtrip_array name a =
+    let cfa = Ctypes.(coerce StringList.typ (ptr void)) a in
+    let rta = Ctypes.(coerce (ptr void) StringList.typ) cfa in
+    Alcotest.(check (list string)) ("roundtrip "^name) a rta
+
+  let roundtrip () =
+    roundtrip_array "empty" [];
+    roundtrip_array "one"   ["A"];
+    roundtrip_array "two"   ["A"; "B"];
+    ()
+
   let tests = [
+    "roundtrip", `Quick, roundtrip;
   ]
 end
 
