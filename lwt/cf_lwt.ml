@@ -17,12 +17,18 @@
 
 module RunLoop = struct
 
-  let run_thread setup =
-    Lwt.async (fun () -> Lwt_preemptive.detach (fun () ->
-        let runloop = Cf.RunLoop.get_current () in
-        setup runloop;
-        Cf.RunLoop.run ()
-      ) ())
+  let run_thread setup = Lwt_preemptive.detach (fun () ->
+    let runloop = Cf.RunLoop.get_current () in
+    setup runloop;
+    Cf.RunLoop.run ()
+  ) ()
+
+  let run_thread_in_mode ?return_after_source_handled ?seconds mode setup =
+    Lwt_preemptive.detach (fun () ->
+      let runloop = Cf.RunLoop.get_current () in
+      setup runloop;
+      Cf.RunLoop.run_in_mode ?return_after_source_handled ?seconds mode
+    ) ()
 
 end
   
