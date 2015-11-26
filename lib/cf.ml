@@ -271,9 +271,12 @@ module RunLoop = struct
     type t = unit ptr
 
     let create activities ?(repeats=true) ?(order=0) callback =
-      (* TODO: GC *)
       let callback runloop activity _info = callback runloop activity in
-      C.CFRunLoop.Observer.(create None activities repeats order callback None)
+      let cf = C.CFRunLoop.Observer.(
+        create None activities repeats order callback None
+      ) in
+      Gc.finalise Type.release cf;
+      cf
 
   end
 
