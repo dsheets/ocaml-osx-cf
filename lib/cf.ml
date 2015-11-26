@@ -80,20 +80,25 @@ module String = struct
 
     let to_bytes t =
       let n = C.CFString.get_length t in
-      let r = C.CFRange.({ location = 0; length = n }) in
-      let size_ptr = allocate_n C.CFIndex.t ~count:1 in
-      let size = Some size_ptr in
-      let chars = C.CFString.get_bytes_ptr t r ascii uint8_0 false None 0 size in
-      if chars = 0
-      then failwith "Cf.String.to_bytes failed"
+      if n = 0
+      then Bytes.empty
       else
-        let size = !@size_ptr in
-        let b = Bytes.create size in
-        let bp = ocaml_bytes_start b in
-        let _ =
-          C.CFString.get_bytes_bytes t r ascii uint8_0 false bp size None
+        let r = C.CFRange.({ location = 0; length = n }) in
+        let size_ptr = allocate_n C.CFIndex.t ~count:1 in
+        let size = Some size_ptr in
+        let chars =
+          C.CFString.get_bytes_ptr t r ascii uint8_0 false None 0 size
         in
-        b
+        if chars = 0
+        then failwith "Cf.String.to_bytes failed"
+        else
+          let size = !@size_ptr in
+          let b = Bytes.create size in
+          let bp = ocaml_bytes_start b in
+          let _ =
+            C.CFString.get_bytes_bytes t r ascii uint8_0 false bp size None
+          in
+          b
 
     let of_bytes b =
       let n = Bytes.length b in
