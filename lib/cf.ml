@@ -179,7 +179,7 @@ module Array = struct
       let read t =
         let n = Ctypes.CArray.length t in
         let list = ref [] in
-        for i = 0 to n do
+        for i = 0 to n - 1 do
           list := Ctypes.CArray.get t i :: !list
         done;
         List.rev !list
