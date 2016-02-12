@@ -1,6 +1,7 @@
 PKG ctypes
 PKG alcotest
 PKG lwt
+PKG threads.posix
 
 S lib
 S lib_gen
