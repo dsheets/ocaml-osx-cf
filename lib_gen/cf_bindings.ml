@@ -467,6 +467,10 @@ module C(F: Cstubs.FOREIGN) = struct
         returning RunResult.typ
       )
 
+    let stop = F.foreign "CFRunLoopStop" (
+      typ @-> returning void
+    )
+
   end
 
   module CFArray = struct

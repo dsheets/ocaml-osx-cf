@@ -145,7 +145,6 @@ end
 module RunLoop : sig
 
   type t
-  type runloop = t
 
   module Mode : sig
     type t =
@@ -174,7 +173,7 @@ module RunLoop : sig
     end
 
     module Callback : sig
-      type t = runloop -> Activity.t -> unit
+      type t = Activity.t -> unit
     end
 
     type t
@@ -207,6 +206,9 @@ module RunLoop : sig
 
   val get_current : unit -> t
 
+  val stop : t -> unit
+
+  val release : t -> unit
 end
 
 module TimeInterval : sig

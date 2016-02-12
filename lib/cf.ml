@@ -23,6 +23,14 @@ module C = Cf_bindings.C(Cf_generated)
 
 module CamlBytes = Bytes
 
+module Obj = struct
+  type 'a t = <
+    cf : 'a;
+    retain : unit;
+    release : unit;
+  >
+end
+
 module type PTR_TYP = sig
 
   type t
@@ -244,8 +252,12 @@ end
 
 module RunLoop = struct
 
-  type t = unit ptr
-  type runloop = t
+  type attachment = Attach : 'a Obj.t -> attachment
+
+  type t = {
+    runloop : unit ptr;
+    mutable attachments : attachment list;
+  }
 
   module Mode = struct
     type t =
@@ -284,18 +296,24 @@ module RunLoop = struct
     end
 
     module Callback = struct
-      type t = runloop -> Activity.t -> unit
+      type t = Activity.t -> unit
     end
 
-    type t = unit ptr
+    type t = {
+      observer : unit ptr;
+      callback :
+        unit Ctypes_static.ptr ->
+        C.CFRunLoop.Observer.Activity.t ->
+        unit ptr -> unit;
+    }
 
     let create activities ?(repeats=true) ?(order=0) callback =
-      let callback runloop activity _info = callback runloop activity in
+      let callback _runloop activity _info = callback activity in
       let cf = C.CFRunLoop.Observer.(
         create None activities repeats order callback None
       ) in
       Gc.finalise Type.release cf;
-      cf
+      { observer = cf; callback }
 
   end
 
@@ -309,10 +327,25 @@ module RunLoop = struct
       | HandledSource -> "HandledSource"
   end
 
-  let typ = C.CFRunLoop.typ
+  let typ = view
+      ~read:(fun runloop -> { runloop; attachments = [] })
+      ~write:(fun { runloop } -> runloop)
+      C.CFRunLoop.typ
+
+  let attach runloop obj =
+    runloop.attachments <- (Attach obj) :: runloop.attachments
 
   let add_observer runloop observer mode =
-    C.CFRunLoop.add_observer runloop observer (Mode.to_cfstring mode)
+    let obj = object
+      method cf = observer
+      method release = Type.release observer.Observer.observer
+      method retain = ignore (Type.retain observer.Observer.observer)
+    end in
+    obj#retain;
+    attach runloop obj;
+    let rl = runloop.runloop in
+    let obs = observer.Observer.observer in
+    C.CFRunLoop.add_observer rl obs (Mode.to_cfstring mode)
 
   let run = C.CFRunLoop.run
 
@@ -323,7 +356,12 @@ module RunLoop = struct
   let get_current () : t =
     let cf = C.CFRunLoop.get_current () in
     let cf = Type.retain cf in
-    Gc.finalise Type.release cf;
-    cf
+    { runloop = cf; attachments = [] }
 
+  let stop { runloop } = C.CFRunLoop.stop runloop
+
+  let release rl =
+    List.iter (fun (Attach obj) -> obj#release) rl.attachments;
+    rl.attachments <- [];
+    Type.release rl.runloop
 end
