@@ -17,17 +17,33 @@
 
 module RunLoop = struct
 
-  let run_thread setup = Lwt_preemptive.detach (fun () ->
-    let runloop = Cf.RunLoop.get_current () in
+  let spin_thread f x =
+    let stream, push = Lwt_stream.create () in
+    let return x = Lwt_preemptive.run_in_main (fun () ->
+      push (Some x);
+      Lwt.return_unit
+    ) in
+    let _thread = Thread.create (fun x -> return (f x)) x in
+    Lwt_stream.next stream
+
+  let run_thread setup = spin_thread (fun () ->
+    let runloop = try Cf.RunLoop.get_current () with e -> (print_endline "exn in get_current"; exit 7) in
     setup runloop;
-    Cf.RunLoop.run ()
+    Cf.RunLoop.run ();
+    Cf.RunLoop.stop runloop;
+    Cf.RunLoop.release runloop
   ) ()
 
   let run_thread_in_mode ?return_after_source_handled ?seconds mode setup =
-    Lwt_preemptive.detach (fun () ->
+    spin_thread (fun () ->
       let runloop = Cf.RunLoop.get_current () in
       setup runloop;
-      Cf.RunLoop.run_in_mode ?return_after_source_handled ?seconds mode
+      let result =
+        Cf.RunLoop.run_in_mode ?return_after_source_handled ?seconds mode
+      in
+      Cf.RunLoop.stop runloop;
+      Cf.RunLoop.release runloop;
+      result
     ) ()
 
 end
