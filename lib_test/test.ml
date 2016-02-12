@@ -85,7 +85,7 @@ module CFRunLoop = struct
         BeforeSources;
         Exit;
       ]) in
-    let callback runloop activity =
+    let callback activity =
       let next = List.hd !expected in
       expected := List.tl !expected;
       Alcotest.(check observer_activity)
@@ -98,10 +98,41 @@ module CFRunLoop = struct
     let result = run_in_mode Mode.Default in
     Alcotest.(check run_result) "run_in_mode successfully timed out"
       Cf.RunLoop.RunResult.TimedOut
-      result
+      result;
+    Cf.RunLoop.stop rl;
+    Cf.RunLoop.release rl
+
+  let observe_empty_thread () =
+    let callback activity =
+      Alcotest.fail "secondary runloop with only observer should never fire"
+    in
+    let obs = Observer.(create Activity.All callback) in
+    Lwt_main.run begin
+      Cf_lwt.RunLoop.run_thread (fun runloop ->
+        add_observer runloop obs Mode.Default
+      )
+    end
+
+  let observe_empty_thread_in_mode () =
+    let callback activity =
+      Alcotest.fail "secondary runloop with only observer should never fire"
+    in
+    let obs = Observer.(create Activity.All callback) in
+    Lwt_main.run begin
+      let open Lwt in
+      Cf_lwt.RunLoop.run_thread_in_mode Mode.Default (fun runloop ->
+        add_observer runloop obs Mode.Default
+      ) >>= fun result ->
+      Alcotest.(check run_result) "run_thread_in_mode successfully finished"
+        Cf.RunLoop.RunResult.Finished
+        result;
+      return_unit
+    end
 
   let tests = [
-    "observe_empty", `Quick, observe_empty;
+    "observe_empty",                `Quick, observe_empty;
+    "observe_empty_thread",         `Quick, observe_empty_thread;
+    "observe_empty_thread_in_mode", `Quick, observe_empty_thread_in_mode;
   ]
 end
 
