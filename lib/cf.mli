@@ -26,14 +26,6 @@ end
 module Type : sig
   val release : unit Ctypes.ptr -> unit
   val retain : unit Ctypes.ptr -> unit Ctypes.ptr
-
-  val released : 'a Ctypes.typ -> 'a Ctypes.typ
-end
-
-module Released(P : PTR_TYP) : sig
-  type t = P.t
-
-  val typ : t Ctypes.typ
 end
 
 module String : sig

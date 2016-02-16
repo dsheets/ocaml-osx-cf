@@ -44,21 +44,6 @@ module Type = struct
   let release = C.CFType.release
 
   let retain = C.CFType.retain
-
-  let released typ = view
-      ~read:(fun p ->
-        let v = coerce (ptr void) typ p in
-        Gc.finalise release p;
-        v
-      )
-      ~write:(coerce typ (ptr void))
-      (ptr void)
-end
-
-module Released(P : PTR_TYP) = struct
-  type t = P.t
-
-  let typ = Type.released P.typ
 end
 
 module VoidPtr = struct
