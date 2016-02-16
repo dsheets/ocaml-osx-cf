@@ -8,7 +8,7 @@ OCAML_LIB_DIR=$(shell ocamlc -where)
 CTYPES_LIB_DIR=$(shell ocamlfind query ctypes)
 
 OCAMLBUILD=CTYPES_LIB_DIR=$(CTYPES_LIB_DIR) OCAML_LIB_DIR=$(OCAML_LIB_DIR) \
-	ocamlbuild -use-ocamlfind -classic-display -cflag -g
+	ocamlbuild -use-ocamlfind -classic-display
 
 WITH_LWT=$(shell ocamlfind query lwt > /dev/null 2>&1 ; echo $$?)
 
