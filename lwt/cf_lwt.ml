@@ -30,7 +30,6 @@ module RunLoop = struct
     let runloop = try Cf.RunLoop.get_current () with e -> (print_endline "exn in get_current"; exit 7) in
     setup runloop;
     Cf.RunLoop.run ();
-    Cf.RunLoop.stop runloop;
     Cf.RunLoop.release runloop
   ) ()
 
