@@ -447,6 +447,19 @@ module C(F: Cstubs.FOREIGN) = struct
         returning void
       )
 
+    (*
+        void CFRunLoopRemoveObserver(
+          CFRunLoopRef rl,
+          CFRunLoopObserverRef observer,
+          CFStringRef mode
+        ); *)
+    let remove_observer = F.foreign "CFRunLoopRemoveObserver" (
+        typ @->
+        Observer.typ @->
+        CFString.typ @->
+        returning void
+      )
+
     let get_current = F.foreign "CFRunLoopGetCurrent" (
       void @-> returning typ
     )
