@@ -300,6 +300,8 @@ module RunLoop = struct
       Gc.finalise Type.release cf;
       { observer = cf; callback }
 
+    let invalidate { observer } = C.CFRunLoop.Observer.invalidate observer
+
   end
 
   module RunResult = struct
