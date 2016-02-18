@@ -172,6 +172,9 @@ module RunLoop : sig
 
     val create :
       Activity.select -> ?repeats:bool -> ?order:int -> Callback.t -> t
+
+    val invalidate :
+      t -> unit
   end
 
   module RunResult : sig

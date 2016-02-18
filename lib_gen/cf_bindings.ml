@@ -405,6 +405,13 @@ module C(F: Cstubs.FOREIGN) = struct
           ptr_opt Context.typ @->
           returning typ
         )
+
+
+      (* void CFRunLoopObserverInvalidate ( CFRunLoopObserverRef observer );  *)
+      let invalidate = F.foreign "CFRunLoopObserverInvalidate" (
+          typ @->
+          returning void
+        )
     end
 
     module RunResult = struct
