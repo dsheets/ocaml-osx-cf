@@ -103,30 +103,37 @@ module CFRunLoop = struct
     Cf.RunLoop.release rl
 
   let observe_empty_thread () =
+    let open Lwt.Infix in
     let callback activity =
       Alcotest.fail "secondary runloop with only observer should never fire"
     in
     let obs = Observer.(create Activity.All callback) in
     Lwt_main.run begin
       Cf_lwt.RunLoop.run_thread (fun runloop ->
-        add_observer runloop obs Mode.Default
+        Cf.RunLoop.add_observer runloop obs Mode.Default
       )
+      >>= fun _runloop ->
+      Lwt.return_unit
     end
 
   let observe_empty_thread_in_mode () =
+    let open Lwt.Infix in
     let callback activity =
       Alcotest.fail "secondary runloop with only observer should never fire"
     in
     let obs = Observer.(create Activity.All callback) in
     Lwt_main.run begin
-      let open Lwt in
-      Cf_lwt.RunLoop.run_thread_in_mode Mode.Default (fun runloop ->
-        add_observer runloop obs Mode.Default
-      ) >>= fun result ->
-      Alcotest.(check run_result) "run_thread_in_mode successfully finished"
-        Cf.RunLoop.RunResult.Finished
-        result;
-      return_unit
+      Cf_lwt.RunLoop.run_thread_in_mode Mode.Default
+        (fun runloop -> add_observer runloop obs Mode.Default)
+        (fun result ->
+           Alcotest.(check run_result)
+             "run_thread_in_mode successfully finished"
+             Cf.RunLoop.RunResult.Finished
+             result;
+           Lwt.return_unit
+        )
+      >>= fun _runloop ->
+      Lwt.return_unit
     end
 
   let tests = [
