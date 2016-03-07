@@ -191,6 +191,8 @@ module RunLoop : sig
 
   val typ : t Ctypes.typ
 
+  val remove_observer : t -> Observer.t -> Mode.t -> unit
+
   val add_observer : t -> Observer.t -> Mode.t -> unit
 
   val run : unit -> unit

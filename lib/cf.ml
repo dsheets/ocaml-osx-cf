@@ -237,13 +237,6 @@ end
 
 module RunLoop = struct
 
-  type attachment = Attach : 'a Obj.t -> attachment
-
-  type t = {
-    runloop : unit ptr;
-    mutable attachments : attachment list;
-  }
-
   module Mode = struct
     type t =
       | Default
@@ -284,24 +277,40 @@ module RunLoop = struct
       type t = Activity.t -> unit
     end
 
+    type repeats = Repeats | Oneshot of (unit -> unit) list ref
+
     type t = {
       observer : unit ptr;
       callback :
         unit Ctypes_static.ptr ->
         C.CFRunLoop.Observer.Activity.t ->
         unit ptr -> unit;
+      repeats : repeats;
     }
 
     let create activities ?(repeats=true) ?(order=0) callback =
-      let callback _runloop activity _info = callback activity in
+      let repeats_t, callback =
+        if repeats
+        then Repeats, (fun _runloop activity _info -> callback activity)
+        else
+          let on_complete = ref [] in
+          Oneshot on_complete,
+          (fun _runloop activity _info ->
+             callback activity;
+             List.iter (fun f -> f ()) !on_complete
+          )
+      in
       let cf = C.CFRunLoop.Observer.(
         create None activities repeats order callback None
       ) in
       Gc.finalise Type.release cf;
-      { observer = cf; callback }
+      { observer = cf; callback; repeats = repeats_t; }
 
     let invalidate { observer } = C.CFRunLoop.Observer.invalidate observer
 
+    let on_complete observer f = match observer.repeats with
+      | Repeats -> ()
+      | Oneshot list_ref -> list_ref := f :: !list_ref
   end
 
   module RunResult = struct
@@ -314,25 +323,45 @@ module RunLoop = struct
       | HandledSource -> "HandledSource"
   end
 
+  type attachment =
+    | Observer of Observer.t Obj.t
+
+  type t = {
+    runloop : unit ptr;
+    mutable attachments : attachment list;
+  }
+
   let typ = view
       ~read:(fun runloop -> { runloop; attachments = [] })
       ~write:(fun { runloop } -> runloop)
       C.CFRunLoop.typ
 
-  let attach runloop obj =
-    runloop.attachments <- (Attach obj) :: runloop.attachments
+  let attach runloop attachment =
+    runloop.attachments <- attachment :: runloop.attachments
 
-  let add_observer runloop observer mode =
-    let obj = object
-      method cf = observer
-      method release = Type.release observer.Observer.observer
-      method retain = ignore (Type.retain observer.Observer.observer)
-    end in
-    obj#retain;
-    attach runloop obj;
+  let remove_observer runloop observer mode =
+    let mode = Mode.to_cfstring mode in
     let rl = runloop.runloop in
     let obs = observer.Observer.observer in
-    C.CFRunLoop.add_observer rl obs (Mode.to_cfstring mode)
+    C.CFRunLoop.remove_observer rl obs mode;
+    runloop.attachments <- List.filter (function
+      | Observer obj -> obj#cf.Observer.observer <> obs
+    ) runloop.attachments
+
+  let add_observer runloop observer mode =
+    let rl = runloop.runloop in
+    let obs = observer.Observer.observer in
+    let obj = object
+      method cf = observer
+      method release = remove_observer runloop observer mode
+      method retain = ()
+    end in
+    attach runloop (Observer obj);
+    Observer.on_complete observer (fun () ->
+      remove_observer runloop observer mode
+    );
+    let mode = Mode.to_cfstring mode in
+    C.CFRunLoop.add_observer rl obs mode
 
   let run = C.CFRunLoop.run
 
@@ -342,13 +371,14 @@ module RunLoop = struct
 
   let get_current () : t =
     let cf = C.CFRunLoop.get_current () in
-    let cf = Type.retain cf in
-    { runloop = cf; attachments = [] }
+    { runloop = Type.retain cf; attachments = [] }
 
   let stop { runloop } = C.CFRunLoop.stop runloop
 
   let release rl =
-    List.iter (fun (Attach obj) -> obj#release) rl.attachments;
+    List.iter (function
+      | Observer obj -> obj#release
+    ) rl.attachments;
     rl.attachments <- [];
     Type.release rl.runloop
 end
