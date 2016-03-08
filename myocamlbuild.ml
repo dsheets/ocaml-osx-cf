@@ -65,12 +65,16 @@ dispatch begin
     dep ["ocaml"; "link"; "byte"; "library"; "use_cf_stubs"]
       ["lib/dllcf_stubs"-.-(!Options.ext_dll)];
     flag ["ocaml"; "link"; "byte"; "library"; "use_cf_stubs"] &
-      S[A"-dllib"; A"-lcf_stubs"];
+    S[A"-dllib"; A"-lcf_stubs";
+      A"-cclib"; A"-framework"; A"-cclib"; A"CoreFoundation";
+     ];
 
     dep ["ocaml"; "link"; "native"; "library"; "use_cf_stubs"]
       ["lib/libcf_stubs"-.-(!Options.ext_lib)];
     flag ["ocaml"; "link"; "native"; "library"; "use_cf_stubs"] &
-      S[A"-cclib"; A"-lcf_stubs"];
+    S[A"-cclib"; A"-lcf_stubs";
+      A"-cclib"; A"-framework"; A"-cclib"; A"CoreFoundation";
+     ];
 
     (* Linking tests *)
     flag ["ocaml"; "link"; "byte"; "program"; "use_cf_stubs"] &
