@@ -23,5 +23,6 @@ depends: [
 ]
 depopts: [
   "lwt"
+  "base-threads"
 ]
 available: [os = "darwin"]
