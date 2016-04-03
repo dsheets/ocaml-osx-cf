@@ -41,6 +41,7 @@ module RunLoop = struct
       ) in
       Cf.RunLoop.(add_observer runloop start_observer Mode.Default);
       setup runloop;
+      Gc.compact ();
       run ();
       (* If setup didn't actually register anything on the runloop, this is
          necessary to unblock the main thread. *)
