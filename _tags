@@ -3,3 +3,11 @@ true: principal, bin_annot, safe_string, strict_sequence, debug
 
 "lib": include
 "lwt": include
+
+<lib/*.{ml,mli}>: package(ctypes.stubs)
+<lib/cf_stubs.c>: use_ctypes, use_cf_util
+<lib/*.{cma,cmxa,cmxs}>: use_cf_stubs
+
+<lwt/*.*>: package(lwt.preemptive), thread
+
+<test/*>: package(alcotest)
