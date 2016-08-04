@@ -9,7 +9,13 @@ dev-repo: "https://github.com/dsheets/ocaml-osx-cf.git"
 doc: "https://dsheets.github.io/ocaml-osx-cf/"
 license: "ISC"
 build: [
-  "ocaml" "pkg/pkg.ml" "build" "--pinned" pinned "--with-lwt" lwt:installed
+  "ocaml" "pkg/pkg.ml" "build" "--tests" "false" "--pinned" pinned
+    "--with-lwt" lwt:installed
+]
+build-test: [
+  ["ocaml" "pkg/pkg.ml" "build" "--tests" "true" "--pinned" pinned
+    "--with-lwt" lwt:installed]
+  ["ocaml" "pkg/pkg.ml" "test"]
 ]
 depends: [
   "ocamlfind" {build}
