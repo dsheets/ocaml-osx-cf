@@ -8,7 +8,9 @@ bug-reports: "https://github.com/dsheets/ocaml-osx-cf/issues"
 dev-repo: "https://github.com/dsheets/ocaml-osx-cf.git"
 doc: "https://dsheets.github.io/ocaml-osx-cf/"
 license: "ISC"
-build: ["ocaml" "pkg/pkg.ml" "build" "--with-lwt" lwt:installed]
+build: [
+  "ocaml" "pkg/pkg.ml" "build" "--pinned" pinned "--with-lwt" lwt:installed
+]
 depends: [
   "ocamlfind" {build}
   "topkg"     {build & >= "0.7.2"}
