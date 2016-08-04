@@ -6,7 +6,7 @@ let ctypes_libdir =
   |> String.trim
 
 let ocaml_libdir =
-  run_and_read ("ocamlc -where")
+  run_and_read ("ocamlfind ocamlc -where")
   |> String.trim
 
 let () = dispatch begin
