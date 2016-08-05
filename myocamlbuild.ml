@@ -1,10 +1,15 @@
 open Ocamlbuild_plugin;;
 open Ocamlbuild_pack;;
 
-let ctypes_libdir = Sys.getenv "CTYPES_LIB_DIR" in
-let ocaml_libdir = Sys.getenv "OCAML_LIB_DIR" in
+let ctypes_libdir =
+  run_and_read ("ocamlfind query ctypes")
+  |> String.trim
 
-dispatch begin
+let ocaml_libdir =
+  run_and_read ("ocamlfind ocamlc -where")
+  |> String.trim
+
+let () = dispatch begin
   function
   | After_rules ->
 
@@ -65,25 +70,25 @@ dispatch begin
     dep ["ocaml"; "link"; "byte"; "library"; "use_cf_stubs"]
       ["lib/dllcf_stubs"-.-(!Options.ext_dll)];
     flag ["ocaml"; "link"; "byte"; "library"; "use_cf_stubs"] &
-    S[A"-dllib"; A"-lcf_stubs";
+    S[A"-dllib"; A"-lcf_stubs";A"-I"; A"lib";
       A"-cclib"; A"-framework"; A"-cclib"; A"CoreFoundation";
      ];
 
     dep ["ocaml"; "link"; "native"; "library"; "use_cf_stubs"]
       ["lib/libcf_stubs"-.-(!Options.ext_lib)];
     flag ["ocaml"; "link"; "native"; "library"; "use_cf_stubs"] &
-    S[A"-cclib"; A"-lcf_stubs";
+    S[A"-cclib"; A"-lcf_stubs"; A"-I"; A"lib";
       A"-cclib"; A"-framework"; A"-cclib"; A"CoreFoundation";
      ];
 
     (* Linking tests *)
     flag ["ocaml"; "link"; "byte"; "program"; "use_cf_stubs"] &
-      S[A"-dllib"; A"-lcf_stubs"];
+      S[A"-dllib"; A"-lcf_stubs"; A"-I"; A"lib"];
     dep ["ocaml"; "link"; "byte"; "program"; "use_cf_stubs"]
       ["lib/dllcf_stubs"-.-(!Options.ext_dll)];
 
     flag ["ocaml"; "link"; "native"; "program"; "use_cf_stubs"] &
-      S[A"-cclib"; A"-lcf_stubs"];
+      S[A"-cclib"; A"-lcf_stubs"; A"-I"; A"lib"];
     dep ["ocaml"; "link"; "native"; "program"; "use_cf_stubs"]
       ["lib/libcf_stubs"-.-(!Options.ext_lib)];
 

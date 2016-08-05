@@ -1,0 +1,19 @@
+version = "%%VERSION%%"
+description = "OS X CoreFoundation system library bindings"
+requires = "ctypes.stubs ctypes.foreign"
+archive(byte) = "osx-cf.cma"
+archive(native) = "osx-cf.cmxa"
+plugin(byte) = "osx-cf.cma"
+plugin(native) = "osx-cf.cmxs"
+exists_if = "osx-cf.cma"
+
+package "lwt" (
+  version = "%%VERSION%%"
+  requires = "osx-cf lwt.preemptive"
+  description = "Lwt bindings to OS X CoreFoundation system library bindings"
+  archive(byte) = "osx-cf-lwt.cma"
+  archive(native) = "osx-cf-lwt.cmxa"
+  plugin(byte) = "osx-cf-lwt.cma"
+  plugin(native) = "osx-cf-lwt.cmxs"
+  exists_if = "osx-cf-lwt.cma"
+)

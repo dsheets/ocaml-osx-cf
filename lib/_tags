@@ -1,3 +1,0 @@
-<*.{ml,mli}>: package(ctypes.stubs)
-<cf_stubs.c>: use_ctypes, use_cf_util
-<*.{cma,cmxa}>: use_cf_stubs

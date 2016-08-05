@@ -1,67 +1,13 @@
-.PHONY: build test install uninstall reinstall clean
+.PHONY: all test clean
 
-FINDLIB_NAME=osx-cf
-MOD_NAME=cf
+LWT=$(shell opam config var lwt:installed)
 
-OCAML_LIB_DIR=$(shell ocamlc -where)
+all:
+	ocaml pkg/pkg.ml build --with-lwt $(LWT)
 
-CTYPES_LIB_DIR=$(shell ocamlfind query ctypes)
-
-OCAMLBUILD=CTYPES_LIB_DIR=$(CTYPES_LIB_DIR) OCAML_LIB_DIR=$(OCAML_LIB_DIR) \
-	ocamlbuild -use-ocamlfind -classic-display
-
-WITH_LWT=$(shell ocamlfind query threads lwt > /dev/null 2>&1 ; echo $$?)
-
-TARGETS=.cma .cmxa
-
-PRODUCTS=$(addprefix $(MOD_NAME),$(TARGETS)) \
-	lib$(MOD_NAME)_stubs.a dll$(MOD_NAME)_stubs.so
-
-ifeq ($(WITH_LWT), 0)
-PRODUCTS+=$(addprefix $(MOD_NAME)_lwt,$(TARGETS))
-endif
-
-TYPES=.mli .cmi .cmti
-
-INSTALL:=$(addprefix $(MOD_NAME), $(TYPES)) \
-         $(addprefix $(MOD_NAME), $(TARGETS))
-
-INSTALL:=$(addprefix _build/lib/,$(INSTALL))
-
-ifeq ($(WITH_LWT), 0)
-INSTALL_LWT:=$(addprefix $(MOD_NAME)_lwt,$(TYPES)) \
-             $(addprefix $(MOD_NAME)_lwt,$(TARGETS))
-
-INSTALL_LWT:=$(addprefix _build/lwt/,$(INSTALL_LWT))
-
-INSTALL+=$(INSTALL_LWT)
-endif
-
-ARCHIVES:=_build/lib/$(MOD_NAME).a
-
-ifeq ($(WITH_LWT), 0)
-ARCHIVES+=_build/lwt/$(MOD_NAME)_lwt.a
-endif
-
-build:
-	$(OCAMLBUILD) $(PRODUCTS)
-
-test: build
-	$(OCAMLBUILD) lib_test/test.native
-	./test.native
-
-install:
-	ocamlfind install $(FINDLIB_NAME) META \
-		$(INSTALL) \
-		-dll _build/lib/dll$(MOD_NAME)_stubs.so \
-		-nodll _build/lib/lib$(MOD_NAME)_stubs.a \
-		$(ARCHIVES)
-
-uninstall:
-	ocamlfind remove $(FINDLIB_NAME)
-
-reinstall: uninstall install
+test:
+	ocaml pkg/pkg.ml build --with-lwt $(LWT) --tests true
+	ocaml pkg/pkg.ml test
 
 clean:
-	ocamlbuild -clean
-	rm -f lib/cf.cm? lib/cf.o
+	rm -rf _build
