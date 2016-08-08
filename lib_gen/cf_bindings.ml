@@ -22,19 +22,19 @@ module Type = Cf_types.C(Cf_types_detected)
 
 module C(F: Cstubs.FOREIGN) = struct
 
-  let memcpy_bytes = F.foreign "memcpy" (
+  let memcpy_bytes = F.(foreign "memcpy" (
     ptr void @->
     ocaml_bytes @->
     size_t   @->
     returning (ptr void)
-  )
+  ))
 
   module CFType = struct
     let typ = typedef (ptr void) "CFTypeRef"
 
-    let retain = F.foreign "CFRetain" (typ @-> returning typ)
+    let retain = F.(foreign "CFRetain" (typ @-> returning typ))
 
-    let release = F.foreign "CFRelease" (typ @-> returning void)
+    let release = F.(foreign "CFRelease" (typ @-> returning void))
   end
 
   module CFIndex = struct
@@ -86,12 +86,12 @@ module C(F: Cstubs.FOREIGN) = struct
          CFOptionFlags hint
        ); *)
     let allocate =
-      F.foreign "CFAllocatorAllocate" (
+      F.(foreign "CFAllocatorAllocate" (
         ptr_opt void @->
         CFIndex.t @->
         ullong @->
         returning (ptr void)
-      )
+      ))
 
   end
 
@@ -198,7 +198,7 @@ module C(F: Cstubs.FOREIGN) = struct
        );
     *)
     let get_length =
-      F.foreign "CFStringGetLength" (typ @-> returning CFIndex.t)
+      F.(foreign "CFStringGetLength" (typ @-> returning CFIndex.t))
 
     (* Boolean CFStringGetCString (
         CFStringRef theString,
@@ -207,13 +207,13 @@ module C(F: Cstubs.FOREIGN) = struct
         CFStringEncoding encoding
        ); *)
     let get_c_string ocaml_typ =
-      F.foreign "CFStringGetCString" (
+      F.(foreign "CFStringGetCString" (
         typ @->
         ocaml_typ @->
         CFIndex.t @->
         Encoding.t @->
         returning bool
-      )
+      ))
     let get_c_string_bytes = get_c_string ocaml_bytes
     let get_c_string_string = get_c_string ocaml_string
 
@@ -228,7 +228,7 @@ module C(F: Cstubs.FOREIGN) = struct
          CFIndex *usedBufLen
        ); *)
     let get_bytes buf_typ =
-      F.foreign "CFStringGetBytes" (
+      F.(foreign "CFStringGetBytes" (
         typ @->
         CFRange.t @->
         Encoding.t @->
@@ -238,7 +238,7 @@ module C(F: Cstubs.FOREIGN) = struct
         CFIndex.t @->
         ptr_opt CFIndex.t @->
         returning CFIndex.t
-      )
+      ))
     let get_bytes_ptr = get_bytes (ptr_opt uint8_t)
     let get_bytes_bytes = get_bytes ocaml_bytes
     let get_bytes_string = get_bytes ocaml_string
@@ -251,14 +251,14 @@ module C(F: Cstubs.FOREIGN) = struct
         Boolean isExternalRepresentation
        ); *)
     let create_with_bytes ocaml_typ =
-      F.foreign "CFStringCreateWithBytes" (
+      F.(foreign "CFStringCreateWithBytes" (
         ptr_opt void @->
         ocaml_typ @->
         CFIndex.t @->
         Encoding.t @->
         bool @->
         returning typ
-      )
+      ))
     let create_with_bytes_bytes = create_with_bytes ocaml_bytes
     let create_with_bytes_string = create_with_bytes ocaml_string
 
@@ -271,7 +271,7 @@ module C(F: Cstubs.FOREIGN) = struct
         CFAllocatorRef contentsDeallocator
        ); *)
     let create_with_bytes_no_copy =
-      F.foreign "CFStringCreateWithBytesNoCopy" (
+      F.(foreign "CFStringCreateWithBytesNoCopy" (
         ptr_opt void @->
         ptr uint8_t @->
         CFIndex.t @->
@@ -279,7 +279,7 @@ module C(F: Cstubs.FOREIGN) = struct
         bool @->
         ptr_opt void @->
         returning typ
-      )
+      ))
 
   end
 
@@ -294,9 +294,10 @@ module C(F: Cstubs.FOREIGN) = struct
 
     module Mode = struct
 
-      let default = F.foreign_value "kCFRunLoopDefaultMode" CFString.const_typ
+      let default =
+        F.(foreign_value "kCFRunLoopDefaultMode" CFString.const_typ)
       let common_modes =
-        F.foreign_value "kCFRunLoopCommonModes" CFString.const_typ
+        F.(foreign_value "kCFRunLoopCommonModes" CFString.const_typ)
 
     end
 
@@ -396,7 +397,7 @@ module C(F: Cstubs.FOREIGN) = struct
            CFRunLoopObserverCallBack callout,
            CFRunLoopObserverContext *context
          ); *)
-      let create = F.foreign "CFRunLoopObserverCreate" (
+      let create = F.(foreign "CFRunLoopObserverCreate" (
           ptr_opt void @->
           Activity.select_typ @->
           bool @->
@@ -404,14 +405,14 @@ module C(F: Cstubs.FOREIGN) = struct
           Callback.typ @->
           ptr_opt Context.typ @->
           returning typ
-        )
+        ))
 
 
       (* void CFRunLoopObserverInvalidate ( CFRunLoopObserverRef observer );  *)
-      let invalidate = F.foreign "CFRunLoopObserverInvalidate" (
+      let invalidate = F.(foreign "CFRunLoopObserverInvalidate" (
           typ @->
           returning void
-        )
+        ))
     end
 
     module RunResult = struct
@@ -447,12 +448,12 @@ module C(F: Cstubs.FOREIGN) = struct
          CFRunLoopObserverRef observer,
          CFStringRef mode
        ); *)
-    let add_observer = F.foreign "CFRunLoopAddObserver" (
+    let add_observer = F.(foreign "CFRunLoopAddObserver" (
         typ @->
         Observer.typ @->
         CFString.typ @->
         returning void
-      )
+      ))
 
     (*
         void CFRunLoopRemoveObserver(
@@ -460,36 +461,36 @@ module C(F: Cstubs.FOREIGN) = struct
           CFRunLoopObserverRef observer,
           CFStringRef mode
         ); *)
-    let remove_observer = F.foreign "CFRunLoopRemoveObserver" (
+    let remove_observer = F.(foreign "CFRunLoopRemoveObserver" (
         typ @->
         Observer.typ @->
         CFString.typ @->
         returning void
-      )
+      ))
 
-    let get_current = F.foreign "CFRunLoopGetCurrent" (
+    let get_current = F.(foreign "CFRunLoopGetCurrent" (
       void @-> returning typ
-    )
+    ))
 
-    let run = F.foreign "osx_cf_run_loop_run" (
+    let run = F.(foreign "osx_cf_run_loop_run" (
       void @-> returning void
-    )
+    ))
 
     (* CFRunLoopRunResult CFRunLoopRunInMode(
          CFStringRef mode,
          CFTimeInterval seconds,
          Boolean returnAfterSourceHandled
        ); *)
-    let run_in_mode = F.foreign "osx_cf_run_loop_run_in_mode" (
+    let run_in_mode = F.(foreign "osx_cf_run_loop_run_in_mode" (
         CFString.typ @->
         CFTimeInterval.typ @->
         bool @->
         returning RunResult.typ
-      )
+      ))
 
-    let stop = F.foreign "CFRunLoopStop" (
+    let stop = F.(foreign "CFRunLoopStop" (
       typ @-> returning void
-    )
+    ))
 
   end
 
@@ -503,7 +504,7 @@ module C(F: Cstubs.FOREIGN) = struct
        );
     *)
     let get_count =
-      F.foreign "CFArrayGetCount" (typ @-> returning CFIndex.t)
+      F.(foreign "CFArrayGetCount" (typ @-> returning CFIndex.t))
 
     (* void CFArrayGetValues (
          CFArrayRef theArray,
@@ -512,12 +513,12 @@ module C(F: Cstubs.FOREIGN) = struct
        );
     *)
     let get_values =
-      F.foreign "CFArrayGetValues" (
+      F.(foreign "CFArrayGetValues" (
         typ @->
         CFRange.t @->
         typedef (ptr (ptr void)) "const void **" @->
         returning void
-      )
+      ))
 
     (* CFArrayRef CFArrayCreate (
          CFAllocatorRef allocator,
@@ -527,12 +528,13 @@ module C(F: Cstubs.FOREIGN) = struct
        );
     *)
     let create =
-      F.foreign "CFArrayCreate" (
+      F.(foreign "CFArrayCreate" (
         ptr_opt void @->
         typedef (ptr (ptr void)) "const void **" @->
         CFIndex.t @->
         ptr_opt void @->
-        returning typ)
+        returning typ
+      ))
 
   end
 
