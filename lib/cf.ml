@@ -327,13 +327,16 @@ module RunLoop = struct
     | Observer of Observer.t Obj.t
 
   type t = {
-    runloop : unit ptr;
+    mutable runloop : unit ptr option;
     mutable attachments : attachment list;
   }
 
   let typ = view
-      ~read:(fun runloop -> { runloop; attachments = [] })
-      ~write:(fun { runloop } -> runloop)
+      ~read:(fun runloop -> { runloop = Some runloop; attachments = [] })
+      ~write:(function
+        | { runloop = Some runloop } -> runloop
+        | { runloop = None } -> failwith "Cf.Runloop.typ already freed"
+      )
       C.CFRunLoop.typ
 
   let attach runloop attachment =
@@ -341,15 +344,15 @@ module RunLoop = struct
 
   let remove_observer runloop observer mode =
     let mode = Mode.to_cfstring mode in
-    let rl = runloop.runloop in
     let obs = observer.Observer.observer in
-    C.CFRunLoop.remove_observer rl obs mode;
     runloop.attachments <- List.filter (function
       | Observer obj -> obj#cf.Observer.observer <> obs
-    ) runloop.attachments
+    ) runloop.attachments;
+    match runloop.runloop with
+    | Some rl -> C.CFRunLoop.remove_observer rl obs mode
+    | None -> ()
 
   let add_observer runloop observer mode =
-    let rl = runloop.runloop in
     let obs = observer.Observer.observer in
     let obj = object
       method cf = observer
@@ -358,10 +361,13 @@ module RunLoop = struct
     end in
     attach runloop (Observer obj);
     Observer.on_complete observer (fun () ->
-      remove_observer runloop observer mode
+      remove_observer runloop observer mode;
+      prerr_endline "observer completed";
     );
     let mode = Mode.to_cfstring mode in
-    C.CFRunLoop.add_observer rl obs mode
+    match runloop.runloop with
+    | Some rl -> C.CFRunLoop.add_observer rl obs mode
+    | None -> ()
 
   let run = C.CFRunLoop.run
 
@@ -371,14 +377,20 @@ module RunLoop = struct
 
   let get_current () : t =
     let cf = C.CFRunLoop.get_current () in
-    { runloop = Type.retain cf; attachments = [] }
+    { runloop = Some (Type.retain cf); attachments = [] }
 
-  let stop { runloop } = C.CFRunLoop.stop runloop
+  let stop = function
+    | { runloop = Some runloop } -> C.CFRunLoop.stop runloop
+    | { runloop = None } -> ()
 
   let release rl =
     List.iter (function
       | Observer obj -> obj#release
     ) rl.attachments;
     rl.attachments <- [];
-    Type.release rl.runloop
+    match rl.runloop with
+    | Some runloop ->
+      Type.release runloop;
+      rl.runloop <- None
+    | None -> ()
 end

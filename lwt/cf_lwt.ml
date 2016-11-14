@@ -26,7 +26,10 @@ module RunLoop = struct
     let _thread = Thread.create (fun x -> f return x) x in
     Lwt_stream.next stream
 
+  let k = ref 0
   let runloop_thread setup run =
+    let loop_id = !k in
+    incr k;
     spin_thread (fun return () ->
       let runloop =
         try Cf.RunLoop.get_current ()
@@ -36,15 +39,23 @@ module RunLoop = struct
       let start_observer = Cf.RunLoop.Observer.(
         create Activity.(Only [Entry]) ~repeats:false (fun _ ->
           started := true;
+          prerr_endline ("runloop started "^string_of_int loop_id);
           return runloop
         )
       ) in
       Cf.RunLoop.(add_observer runloop start_observer Mode.Default);
+      (*let exit_observer = Cf.RunLoop.Observer.(
+        create Activity.(Only [Exit]) ~repeats:false (fun _ ->
+          prerr_endline ("runloop exited "^string_of_int loop_id)
+        )
+      ) in
+        Cf.RunLoop.(add_observer runloop exit_observer Mode.Default);*)
       setup runloop;
       run ();
       (* If setup didn't actually register anything on the runloop, this is
          necessary to unblock the main thread. *)
       (if not !started then return runloop);
+      Unix.sleep 5;
       Cf.RunLoop.release runloop
     ) ()
 

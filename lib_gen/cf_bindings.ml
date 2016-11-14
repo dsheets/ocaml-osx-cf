@@ -333,7 +333,15 @@ module C(F: Cstubs.FOREIGN) = struct
             else if i = before_waiting then BeforeWaiting
             else if i = after_waiting then AfterWaiting
             else if i = exit then Exit
-            else failwith "CFRunLoop.Observer.Activity.of_ullong unknown code"
+            else
+              let open Printf in
+              let msg =
+                sprintf "CFRunLoop.Observer.Activity.of_ullong unknown code %d"
+                  (Unsigned.ULLong.to_int i)
+              in
+              (*failwith msg*)
+              prerr_endline msg;
+              Exit
           )
 
         let typ = typedef (
