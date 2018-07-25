@@ -9,7 +9,7 @@ exists_if = "osx-cf.cma"
 
 package "lwt" (
   version = "%%VERSION%%"
-  requires = "osx-cf lwt.preemptive"
+  requires = "osx-cf lwt.unix"
   description = "Lwt bindings to OS X CoreFoundation system library bindings"
   archive(byte) = "osx-cf-lwt.cma"
   archive(native) = "osx-cf-lwt.cmxa"

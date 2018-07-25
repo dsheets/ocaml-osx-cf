@@ -8,6 +8,6 @@ true: principal, bin_annot, safe_string, strict_sequence, debug
 <lib/cf_stubs.c>: use_ctypes, use_cf_util
 <lib/*.{cma,cmxa,cmxs}>: use_cf_stubs
 
-<lwt/*.*>: package(lwt.preemptive), thread
+<lwt/*.*>: package(lwt.unix), thread
 
 <test/*>: package(alcotest)

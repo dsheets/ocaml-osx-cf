@@ -1,1 +1,1 @@
-<*.*>: package(alcotest), package(ctypes.stubs), package(ctypes.foreign), package(lwt.preemptive), use_cf_stubs, thread
+<*.*>: package(alcotest), package(ctypes.stubs), package(ctypes.foreign), package(lwt.unix), use_cf_stubs, thread
