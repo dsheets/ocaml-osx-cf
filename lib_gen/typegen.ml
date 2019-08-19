@@ -15,18 +15,10 @@
  *
  *)
 
-open Ctypes
 
 let () =
-  let prefix = "caml_" in
-  let stubs_oc = open_out "lib/cf_stubs.c" in
-  let fmt = Format.formatter_of_out_channel stubs_oc in
+  let type_oc = open_out "detect.c" in
+  let fmt = Format.formatter_of_out_channel type_oc in
   Format.fprintf fmt "#include <CoreFoundation/CoreFoundation.h>@.";
-  Format.fprintf fmt "#include \"osx_cf_util.h\"@.";
-  Cstubs.write_c fmt ~prefix (module Cf_bindings.C);
-  close_out stubs_oc;
-
-  let generated_oc = open_out "lib/cf_generated.ml" in
-  let fmt = Format.formatter_of_out_channel generated_oc in
-  Cstubs.write_ml fmt ~prefix (module Cf_bindings.C);
-  close_out generated_oc
+  Cstubs.Types.write_c fmt (module Types.C);
+  close_out type_oc;

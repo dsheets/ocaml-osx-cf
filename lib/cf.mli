@@ -58,8 +58,6 @@ module String : sig
     val to_bytes : cfstring -> t
     val of_bytes : t -> cfstring
 
-    val typ : t Ctypes.typ
-
     include PTR_TYP with type t := t
   end
 
@@ -68,8 +66,6 @@ module String : sig
 
     val to_string : cfstring -> t
     val of_string : t -> cfstring
-
-    val typ : t Ctypes.typ
 
     include PTR_TYP with type t := t
   end
@@ -88,8 +84,6 @@ module Array : sig
     val to_carray : cfarray -> t
     val of_carray : t -> cfarray
 
-    val typ : t Ctypes.typ
-
     module Make(T : PTR_TYP) : sig
       include PTR_TYP with type t = T.t Ctypes.CArray.t
     end
@@ -102,8 +96,6 @@ module Array : sig
 
     val to_list : cfarray -> t
     val of_list : t -> cfarray
-
-    val typ : t Ctypes.typ
 
     module Make(T : PTR_TYP) : sig
       include PTR_TYP with type t = T.t list
@@ -215,3 +207,8 @@ module TimeInterval : sig
   val typ : t Ctypes.typ
 
 end
+
+module Types = Types
+module Types_detected = Types_detected
+module Bindings = Bindings
+module Generated = Generated

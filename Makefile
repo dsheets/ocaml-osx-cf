@@ -1,13 +1,16 @@
-.PHONY: all test clean
-
-LWT=$(shell opam config var lwt:installed)
+.PHONY: all clean test doc examples
 
 all:
-	ocaml pkg/pkg.ml build --with-lwt $(LWT)
+	dune build
 
 test:
-	ocaml pkg/pkg.ml build --with-lwt $(LWT) --tests true
-	ocaml pkg/pkg.ml test
+	dune runtest -j1 --no-buffer
+
+examples:
+	dune build @examples
 
 clean:
-	rm -rf _build
+	dune clean
+
+doc:
+	dune build @doc

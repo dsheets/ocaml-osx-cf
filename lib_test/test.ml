@@ -104,7 +104,7 @@ module CFRunLoop = struct
 
   let observe_empty_thread () =
     let open Lwt.Infix in
-    let callback activity =
+    let callback _activity =
       Alcotest.fail "secondary runloop with only observer should never fire"
     in
     let obs = Observer.(create Activity.All callback) in
@@ -118,7 +118,7 @@ module CFRunLoop = struct
 
   let observe_empty_thread_in_mode () =
     let open Lwt.Infix in
-    let callback activity =
+    let callback _activity =
       Alcotest.fail "secondary runloop with only observer should never fire"
     in
     let obs = Observer.(create Activity.All callback) in

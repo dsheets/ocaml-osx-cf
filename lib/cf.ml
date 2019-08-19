@@ -18,8 +18,8 @@
 
 open Ctypes
 
-module Types = Cf_types.C(Cf_types_detected)
-module C = Cf_bindings.C(Cf_generated)
+module T = Types.C(Types_detected)
+module C = Bindings.C(Generated)
 
 module CamlBytes = Bytes
 
@@ -231,8 +231,6 @@ module Allocator = struct
   let copy_description_callback_typ =
     Foreign.funptr (ptr void @-> returning String.Bytes.typ)
 
-  let allocate size =
-    C.CFAllocator.allocate None size (Unsigned.ULLong.of_int 0)
 end
 
 module RunLoop = struct
@@ -306,7 +304,7 @@ module RunLoop = struct
       Gc.finalise Type.release cf;
       { observer = cf; callback; repeats = repeats_t; }
 
-    let invalidate { observer } = C.CFRunLoop.Observer.invalidate observer
+    let invalidate { observer; _ } = C.CFRunLoop.Observer.invalidate observer
 
     let on_complete observer f = match observer.repeats with
       | Repeats -> ()
@@ -333,7 +331,7 @@ module RunLoop = struct
 
   let typ = view
       ~read:(fun runloop -> { runloop; attachments = [] })
-      ~write:(fun { runloop } -> runloop)
+      ~write:(fun { runloop; _ } -> runloop)
       C.CFRunLoop.typ
 
   let attach runloop attachment =
@@ -373,7 +371,7 @@ module RunLoop = struct
     let cf = C.CFRunLoop.get_current () in
     { runloop = Type.retain cf; attachments = [] }
 
-  let stop { runloop } = C.CFRunLoop.stop runloop
+  let stop { runloop; _ } = C.CFRunLoop.stop runloop
 
   let release rl =
     List.iter (function
@@ -382,3 +380,8 @@ module RunLoop = struct
     rl.attachments <- [];
     Type.release rl.runloop
 end
+
+module Types = Types
+module Types_detected = Types_detected
+module Bindings = Bindings
+module Generated = Generated

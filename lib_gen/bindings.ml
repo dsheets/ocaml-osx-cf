@@ -18,7 +18,7 @@
 
 open Ctypes
 
-module Type = Cf_types.C(Cf_types_detected)
+module Type = Types.C(Types_detected)
 
 module C(F: Cstubs.FOREIGN) = struct
 
@@ -348,14 +348,14 @@ module C(F: Cstubs.FOREIGN) = struct
         let select_of_ullong u =
           if u = Type.RunLoopActivity.all_activities
           then All
-          else Only Unsigned.ULLong.(Infix.(Type.RunLoopActivity.(
+          else Only Type.RunLoopActivity.(
               let p = select u entry Entry [] in
               let p = select u before_timers BeforeTimers p in
               let p = select u before_sources BeforeSources p in
               let p = select u before_waiting BeforeWaiting p in
               let p = select u after_waiting AfterWaiting p in
               select u exit Exit p
-            )))
+            )
 
         let select_to_ullong = function
           | Only activities ->
@@ -472,7 +472,7 @@ module C(F: Cstubs.FOREIGN) = struct
       void @-> returning typ
     ))
 
-    let run = F.(foreign "osx_cf_run_loop_run" (
+    let run = F.(foreign "caml_cf_run_loop_run" (
       void @-> returning void
     ))
 
@@ -481,7 +481,7 @@ module C(F: Cstubs.FOREIGN) = struct
          CFTimeInterval seconds,
          Boolean returnAfterSourceHandled
        ); *)
-    let run_in_mode = F.(foreign "osx_cf_run_loop_run_in_mode" (
+    let run_in_mode = F.(foreign "caml_cf_run_loop_run_in_mode" (
         CFString.typ @->
         CFTimeInterval.typ @->
         bool @->
