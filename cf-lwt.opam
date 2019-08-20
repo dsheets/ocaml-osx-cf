@@ -10,19 +10,20 @@ license: "ISC"
 build: [
  ["dune" "subst"] {pinned}
  ["dune" "build" "-p" name "-j" jobs]
+ ["dune" "runtest" "-p" name] {with-test}
 ]
 
 depends: [
   "dune"
-  "base-bytes"
-  "ctypes" {>= "0.4.0"}
-  "ctypes-foreign"
+  "alcotest" {test}
+  "cf"
+  "lwt" {>= "3.2.0"}
 ]
 
 available: [os = "macos"]
 
 synopsis: """
-OCaml bindings to macOS CoreFoundation
+Lwt bindings to macOS CoreFoundation
 """
 description: """
 These bindings use [ctypes](https://github.com/ocamllabs/ocaml-ctypes)

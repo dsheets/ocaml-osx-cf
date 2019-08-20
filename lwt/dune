@@ -1,4 +1,4 @@
 (library
   (name cf_lwt)
-  (public_name cf.lwt)
+  (public_name cf-lwt)
   (libraries cf lwt.unix threads))
