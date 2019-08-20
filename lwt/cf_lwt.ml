@@ -30,7 +30,7 @@ module RunLoop = struct
     spin_thread (fun return () ->
       let runloop =
         try Cf.RunLoop.get_current ()
-        with e -> (print_endline "exn in get_current"; exit 7)
+        with _ -> (print_endline "exn in get_current"; exit 7)
       in
       let started = ref false in
       let start_observer = Cf.RunLoop.Observer.(
@@ -60,4 +60,3 @@ module RunLoop = struct
     )
 
 end
-  
