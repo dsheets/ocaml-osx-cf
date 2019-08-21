@@ -15,8 +15,8 @@ build: [
 
 depends: [
   "dune"
-  "alcotest" {test}
-  "cf"
+  "alcotest" {with-test}
+  "cf" {>= "0.2"}
   "lwt" {>= "3.2.0"}
 ]
 
