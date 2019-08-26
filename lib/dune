@@ -2,7 +2,7 @@
   (name        cf)
   (public_name cf)
   (libraries   ctypes.stubs ctypes.foreign)
-  (c_library_flags -framework CoreFoundation -L/usr/local/lib)
+  (c_library_flags -framework CoreFoundation)
   (c_names     cf_stubs cf_util))
 
 (rule (copy# ../lib_gen/types.ml types.ml))
