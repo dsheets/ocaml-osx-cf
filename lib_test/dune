@@ -1,4 +1,4 @@
 (test
-  (name      test)
-  (package   cf-lwt)
-  (libraries lwt.unix alcotest cf cf-lwt))
+ (name test)
+ (package cf-lwt)
+ (libraries lwt.unix alcotest cf cf-lwt))

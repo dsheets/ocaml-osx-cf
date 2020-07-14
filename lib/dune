@@ -1,12 +1,23 @@
 (library
-  (name        cf)
-  (public_name cf)
-  (libraries   ctypes.stubs ctypes.foreign)
-  (c_library_flags -framework CoreFoundation)
-  (c_names     cf_stubs cf_util))
+ (foreign_stubs
+  (language c)
+  (names cf_stubs cf_util))
+ (name cf)
+ (public_name cf)
+ (libraries ctypes.stubs ctypes.foreign)
+ (c_library_flags -framework CoreFoundation))
 
-(rule (copy# ../lib_gen/types.ml types.ml))
-(rule (copy# ../lib_gen/types_detected.ml types_detected.ml))
-(rule (copy# ../lib_gen/bindings.ml bindings.ml))
-(rule (copy# ../lib_gen/generated.ml generated.ml))
-(rule (copy# ../lib_gen/cf_stubs.c cf_stubs.c))
+(rule
+ (copy# ../lib_gen/types.ml types.ml))
+
+(rule
+ (copy# ../lib_gen/types_detected.ml types_detected.ml))
+
+(rule
+ (copy# ../lib_gen/bindings.ml bindings.ml))
+
+(rule
+ (copy# ../lib_gen/generated.ml generated.ml))
+
+(rule
+ (copy# ../lib_gen/cf_stubs.c cf_stubs.c))
