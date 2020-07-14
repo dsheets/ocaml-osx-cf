@@ -19,8 +19,10 @@ module RunLoop : sig
   val run_thread : (Cf.RunLoop.t -> unit) -> Cf.RunLoop.t Lwt.t
 
   val run_thread_in_mode :
-    ?return_after_source_handled:bool -> ?seconds:float -> Cf.RunLoop.Mode.t ->
+    ?return_after_source_handled:bool ->
+    ?seconds:float ->
+    Cf.RunLoop.Mode.t ->
     (Cf.RunLoop.t -> unit) ->
-    (Cf.RunLoop.RunResult.t -> unit Lwt.t) -> Cf.RunLoop.t Lwt.t
-
+    (Cf.RunLoop.RunResult.t -> unit Lwt.t) ->
+    Cf.RunLoop.t Lwt.t
 end

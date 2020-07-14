@@ -17,17 +17,13 @@
  *)
 
 open Ctypes
+module Type = Types.C (Types_detected)
 
-module Type = Types.C(Types_detected)
-
-module C(F: Cstubs.FOREIGN) = struct
-
-  let memcpy_bytes = F.(foreign "memcpy" (
-    ptr void @->
-    ocaml_bytes @->
-    size_t   @->
-    returning (ptr void)
-  ))
+module C (F : Cstubs.FOREIGN) = struct
+  let memcpy_bytes =
+    F.(
+      foreign "memcpy"
+        (ptr void @-> ocaml_bytes @-> size_t @-> returning (ptr void)))
 
   module CFType = struct
     let typ = typedef (ptr void) "CFTypeRef"
@@ -86,17 +82,12 @@ module C(F: Cstubs.FOREIGN) = struct
          CFOptionFlags hint
        ); *)
     let allocate =
-      F.(foreign "CFAllocatorAllocate" (
-        ptr_opt void @->
-        CFIndex.t @->
-        ullong @->
-        returning (ptr void)
-      ))
-
+      F.(
+        foreign "CFAllocatorAllocate"
+          (ptr_opt void @-> CFIndex.t @-> ullong @-> returning (ptr void)))
   end
 
   module CFRange = struct
-
     (* struct CFRange {
          CFIndex location;
          CFIndex length;
@@ -104,16 +95,18 @@ module C(F: Cstubs.FOREIGN) = struct
        typedef struct CFRange CFRange;
     *)
     type range
+
     let struct_typ : range structure typ = structure "CFRange"
+
     let location = field struct_typ "location" CFIndex.t
+
     let length = field struct_typ "length" CFIndex.t
+
     let () = seal struct_typ
+
     let typ : range structure typ = typedef struct_typ "CFRange"
 
-    type t = {
-      location: int;
-      length: int;
-    }
+    type t = { location : int; length : int }
 
     let of_t { location = loc; length = len } =
       let t = make typ in
@@ -127,11 +120,9 @@ module C(F: Cstubs.FOREIGN) = struct
       { location; length }
 
     let t = view ~read:to_t ~write:of_t typ
-
   end
 
   module CFString = struct
-
     module Encoding = struct
       type t =
         | MacRoman
@@ -149,43 +140,43 @@ module C(F: Cstubs.FOREIGN) = struct
         | UTF32BE
         | UTF32LE
 
-      let to_uint32 = Type.StringEncoding.(function
-        | MacRoman      -> mac_roman
-        | WindowsLatin1 -> windows_latin1
-        | ISOLatin1     -> iso_latin1
-        | NextStepLatin -> nextstep_latin
-        | ASCII         -> ascii
-        | Unicode       -> unicode
-        | UTF8          -> utf8
-        | NonLossyASCII -> nonlossy_ascii
-        | UTF16         -> utf16
-        | UTF16BE       -> utf16be
-        | UTF16LE       -> utf16le
-        | UTF32         -> utf32
-        | UTF32BE       -> utf32be
-        | UTF32LE       -> utf32le
-      )
+      let to_uint32 =
+        Type.StringEncoding.(
+          function
+          | MacRoman -> mac_roman
+          | WindowsLatin1 -> windows_latin1
+          | ISOLatin1 -> iso_latin1
+          | NextStepLatin -> nextstep_latin
+          | ASCII -> ascii
+          | Unicode -> unicode
+          | UTF8 -> utf8
+          | NonLossyASCII -> nonlossy_ascii
+          | UTF16 -> utf16
+          | UTF16BE -> utf16be
+          | UTF16LE -> utf16le
+          | UTF32 -> utf32
+          | UTF32BE -> utf32be
+          | UTF32LE -> utf32le)
 
-      let of_uint32 i = Type.StringEncoding.(
-        if i = mac_roman then MacRoman
-        else if i = windows_latin1 then WindowsLatin1
-        else if i = iso_latin1 then ISOLatin1
-        else if i = nextstep_latin then NextStepLatin
-        else if i = ascii then ASCII
-        else if i = unicode then Unicode
-        else if i = utf8 then UTF8
-        else if i = nonlossy_ascii then NonLossyASCII
-        else if i = utf16 then UTF16
-        else if i = utf16be then UTF16BE
-        else if i = utf16le then UTF16LE
-        else if i = utf32 then UTF32
-        else if i = utf32be then UTF32BE
-        else if i = utf32le then UTF32LE
-        else failwith "CFString.Encoding.of_uint32 unknown code"
-      )
+      let of_uint32 i =
+        Type.StringEncoding.(
+          if i = mac_roman then MacRoman
+          else if i = windows_latin1 then WindowsLatin1
+          else if i = iso_latin1 then ISOLatin1
+          else if i = nextstep_latin then NextStepLatin
+          else if i = ascii then ASCII
+          else if i = unicode then Unicode
+          else if i = utf8 then UTF8
+          else if i = nonlossy_ascii then NonLossyASCII
+          else if i = utf16 then UTF16
+          else if i = utf16be then UTF16BE
+          else if i = utf16le then UTF16LE
+          else if i = utf32 then UTF32
+          else if i = utf32be then UTF32BE
+          else if i = utf32le then UTF32LE
+          else failwith "CFString.Encoding.of_uint32 unknown code")
 
       let t = view ~read:of_uint32 ~write:to_uint32 uint32_t
-
     end
 
     (* typedef const struct __CFString *CFStringRef; *)
@@ -207,14 +198,12 @@ module C(F: Cstubs.FOREIGN) = struct
         CFStringEncoding encoding
        ); *)
     let get_c_string ocaml_typ =
-      F.(foreign "CFStringGetCString" (
-        typ @->
-        ocaml_typ @->
-        CFIndex.t @->
-        Encoding.t @->
-        returning bool
-      ))
+      F.(
+        foreign "CFStringGetCString"
+          (typ @-> ocaml_typ @-> CFIndex.t @-> Encoding.t @-> returning bool))
+
     let get_c_string_bytes = get_c_string ocaml_bytes
+
     let get_c_string_string = get_c_string ocaml_string
 
     (* CFIndex CFStringGetBytes(
@@ -228,19 +217,22 @@ module C(F: Cstubs.FOREIGN) = struct
          CFIndex *usedBufLen
        ); *)
     let get_bytes buf_typ =
-      F.(foreign "CFStringGetBytes" (
-        typ @->
-        CFRange.t @->
-        Encoding.t @->
-        uint8_t @->
-        bool @->
-        buf_typ @->
-        CFIndex.t @->
-        ptr_opt CFIndex.t @->
-        returning CFIndex.t
-      ))
+      F.(
+        foreign "CFStringGetBytes"
+          (typ
+          @-> CFRange.t
+          @-> Encoding.t
+          @-> uint8_t
+          @-> bool
+          @-> buf_typ
+          @-> CFIndex.t
+          @-> ptr_opt CFIndex.t
+          @-> returning CFIndex.t))
+
     let get_bytes_ptr = get_bytes (ptr_opt uint8_t)
+
     let get_bytes_bytes = get_bytes ocaml_bytes
+
     let get_bytes_string = get_bytes ocaml_string
 
     (* CFStringRef CFStringCreateWithBytes(
@@ -251,15 +243,17 @@ module C(F: Cstubs.FOREIGN) = struct
         Boolean isExternalRepresentation
        ); *)
     let create_with_bytes ocaml_typ =
-      F.(foreign "CFStringCreateWithBytes" (
-        ptr_opt void @->
-        ocaml_typ @->
-        CFIndex.t @->
-        Encoding.t @->
-        bool @->
-        returning typ
-      ))
+      F.(
+        foreign "CFStringCreateWithBytes"
+          (ptr_opt void
+          @-> ocaml_typ
+          @-> CFIndex.t
+          @-> Encoding.t
+          @-> bool
+          @-> returning typ))
+
     let create_with_bytes_bytes = create_with_bytes ocaml_bytes
+
     let create_with_bytes_string = create_with_bytes ocaml_string
 
     (* CFStringRef CFStringCreateWithBytesNoCopy(
@@ -271,38 +265,31 @@ module C(F: Cstubs.FOREIGN) = struct
         CFAllocatorRef contentsDeallocator
        ); *)
     let create_with_bytes_no_copy =
-      F.(foreign "CFStringCreateWithBytesNoCopy" (
-        ptr_opt void @->
-        ptr uint8_t @->
-        CFIndex.t @->
-        Encoding.t @->
-        bool @->
-        ptr_opt void @->
-        returning typ
-      ))
-
+      F.(
+        foreign "CFStringCreateWithBytesNoCopy"
+          (ptr_opt void
+          @-> ptr uint8_t
+          @-> CFIndex.t
+          @-> Encoding.t
+          @-> bool
+          @-> ptr_opt void
+          @-> returning typ))
   end
 
   module CFTimeInterval = struct
-
     (* typedef double CFTimeInterval; *)
     let typ = double
-
   end
 
   module CFRunLoop = struct
-
     module Mode = struct
+      let default = F.(foreign_value "kCFRunLoopDefaultMode" CFString.const_typ)
 
-      let default =
-        F.(foreign_value "kCFRunLoopDefaultMode" CFString.const_typ)
       let common_modes =
         F.(foreign_value "kCFRunLoopCommonModes" CFString.const_typ)
-
     end
 
     module Observer = struct
-
       let typ = typedef (ptr void) "CFRunLoopObserverRef"
 
       module Activity = struct
@@ -313,55 +300,57 @@ module C(F: Cstubs.FOREIGN) = struct
           | BeforeWaiting
           | AfterWaiting
           | Exit
-        type select =
-          | Only of t list
-          | All
 
-        let to_ullong = Type.RunLoopActivity.(function
+        type select = Only of t list | All
+
+        let to_ullong =
+          Type.RunLoopActivity.(
+            function
             | Entry -> entry
             | BeforeTimers -> before_timers
             | BeforeSources -> before_sources
             | BeforeWaiting -> before_waiting
             | AfterWaiting -> after_waiting
-            | Exit -> exit
-          )
+            | Exit -> exit)
 
-        let of_ullong i = Type.RunLoopActivity.(
+        let of_ullong i =
+          Type.RunLoopActivity.(
             if i = entry then Entry
             else if i = before_timers then BeforeTimers
             else if i = before_sources then BeforeSources
             else if i = before_waiting then BeforeWaiting
             else if i = after_waiting then AfterWaiting
             else if i = exit then Exit
-            else failwith "CFRunLoop.Observer.Activity.of_ullong unknown code"
-          )
+            else failwith "CFRunLoop.Observer.Activity.of_ullong unknown code")
 
-        let typ = typedef (
-            view ~read:of_ullong ~write:to_ullong ullong
-          ) "CFRunLoopActivity"
+        let typ =
+          typedef
+            (view ~read:of_ullong ~write:to_ullong ullong)
+            "CFRunLoopActivity"
 
         let select u ullong activity p =
-          if compare Unsigned.ULLong.Infix.(u land ullong) ullong = 0
-          then activity::p
+          if compare Unsigned.ULLong.Infix.(u land ullong) ullong = 0 then
+            activity :: p
           else p
 
         let select_of_ullong u =
-          if u = Type.RunLoopActivity.all_activities
-          then All
-          else Only Type.RunLoopActivity.(
-              let p = select u entry Entry [] in
-              let p = select u before_timers BeforeTimers p in
-              let p = select u before_sources BeforeSources p in
-              let p = select u before_waiting BeforeWaiting p in
-              let p = select u after_waiting AfterWaiting p in
-              select u exit Exit p
-            )
+          if u = Type.RunLoopActivity.all_activities then All
+          else
+            Only
+              Type.RunLoopActivity.(
+                let p = select u entry Entry [] in
+                let p = select u before_timers BeforeTimers p in
+                let p = select u before_sources BeforeSources p in
+                let p = select u before_waiting BeforeWaiting p in
+                let p = select u after_waiting AfterWaiting p in
+                select u exit Exit p)
 
         let select_to_ullong = function
           | Only activities ->
-            Unsigned.ULLong.(List.fold_left (fun x activity ->
-                logor x (to_ullong activity)
-              ) zero activities)
+              Unsigned.ULLong.(
+                List.fold_left
+                  (fun x activity -> logor x (to_ullong activity))
+                  zero activities)
           | All -> Type.RunLoopActivity.all_activities
 
         let select_typ =
@@ -369,20 +358,14 @@ module C(F: Cstubs.FOREIGN) = struct
       end
 
       module Callback = struct
-
         (* typedef void ( *CFRunLoopObserverCallBack)(
              CFRunLoopObserverRef observer,
              CFRunLoopActivity activity,
              void *info
            ); *)
         let typ =
-          Foreign.funptr ~runtime_lock:true ~name:"CFRunLoopObserverCallBack" (
-            typ @->
-            Activity.typ @->
-            ptr void @->
-            returning void
-          )
-
+          Foreign.funptr ~runtime_lock:true ~name:"CFRunLoopObserverCallBack"
+            (typ @-> Activity.typ @-> ptr void @-> returning void)
       end
 
       module Context = struct
@@ -397,45 +380,40 @@ module C(F: Cstubs.FOREIGN) = struct
            CFRunLoopObserverCallBack callout,
            CFRunLoopObserverContext *context
          ); *)
-      let create = F.(foreign "CFRunLoopObserverCreate" (
-          ptr_opt void @->
-          Activity.select_typ @->
-          bool @->
-          CFIndex.t @->
-          Callback.typ @->
-          ptr_opt Context.typ @->
-          returning typ
-        ))
-
+      let create =
+        F.(
+          foreign "CFRunLoopObserverCreate"
+            (ptr_opt void
+            @-> Activity.select_typ
+            @-> bool
+            @-> CFIndex.t
+            @-> Callback.typ
+            @-> ptr_opt Context.typ
+            @-> returning typ))
 
       (* void CFRunLoopObserverInvalidate ( CFRunLoopObserverRef observer );  *)
-      let invalidate = F.(foreign "CFRunLoopObserverInvalidate" (
-          typ @->
-          returning void
-        ))
+      let invalidate =
+        F.(foreign "CFRunLoopObserverInvalidate" (typ @-> returning void))
     end
 
     module RunResult = struct
-      type t =
-        | Finished
-        | Stopped
-        | TimedOut
-        | HandledSource
+      type t = Finished | Stopped | TimedOut | HandledSource
 
-      let to_int32 = Type.RunLoopRunResult.(function
+      let to_int32 =
+        Type.RunLoopRunResult.(
+          function
           | Finished -> finished
           | Stopped -> stopped
           | TimedOut -> timed_out
-          | HandledSource -> handled_source
-        )
+          | HandledSource -> handled_source)
 
-      let of_int32 i = Type.RunLoopRunResult.(
+      let of_int32 i =
+        Type.RunLoopRunResult.(
           if i = finished then Finished
           else if i = stopped then Stopped
           else if i = timed_out then TimedOut
           else if i = handled_source then HandledSource
-          else failwith "CFRunLoop.RunResult.of_int32 unknown code"
-        )
+          else failwith "CFRunLoop.RunResult.of_int32 unknown code")
 
       let typ = view ~read:of_int32 ~write:to_int32 int32_t
     end
@@ -448,12 +426,10 @@ module C(F: Cstubs.FOREIGN) = struct
          CFRunLoopObserverRef observer,
          CFStringRef mode
        ); *)
-    let add_observer = F.(foreign "CFRunLoopAddObserver" (
-        typ @->
-        Observer.typ @->
-        CFString.typ @->
-        returning void
-      ))
+    let add_observer =
+      F.(
+        foreign "CFRunLoopAddObserver"
+          (typ @-> Observer.typ @-> CFString.typ @-> returning void))
 
     (*
         void CFRunLoopRemoveObserver(
@@ -461,41 +437,32 @@ module C(F: Cstubs.FOREIGN) = struct
           CFRunLoopObserverRef observer,
           CFStringRef mode
         ); *)
-    let remove_observer = F.(foreign "CFRunLoopRemoveObserver" (
-        typ @->
-        Observer.typ @->
-        CFString.typ @->
-        returning void
-      ))
+    let remove_observer =
+      F.(
+        foreign "CFRunLoopRemoveObserver"
+          (typ @-> Observer.typ @-> CFString.typ @-> returning void))
 
-    let get_current = F.(foreign "CFRunLoopGetCurrent" (
-      void @-> returning typ
-    ))
+    let get_current = F.(foreign "CFRunLoopGetCurrent" (void @-> returning typ))
 
-    let run = F.(foreign "caml_cf_run_loop_run" (
-      void @-> returning void
-    ))
+    let run = F.(foreign "caml_cf_run_loop_run" (void @-> returning void))
 
     (* CFRunLoopRunResult CFRunLoopRunInMode(
          CFStringRef mode,
          CFTimeInterval seconds,
          Boolean returnAfterSourceHandled
        ); *)
-    let run_in_mode = F.(foreign "caml_cf_run_loop_run_in_mode" (
-        CFString.typ @->
-        CFTimeInterval.typ @->
-        bool @->
-        returning RunResult.typ
-      ))
+    let run_in_mode =
+      F.(
+        foreign "caml_cf_run_loop_run_in_mode"
+          (CFString.typ
+          @-> CFTimeInterval.typ
+          @-> bool
+          @-> returning RunResult.typ))
 
-    let stop = F.(foreign "CFRunLoopStop" (
-      typ @-> returning void
-    ))
-
+    let stop = F.(foreign "CFRunLoopStop" (typ @-> returning void))
   end
 
   module CFArray = struct
-
     (* typedef const struct __CFArray *CFArrayRef; *)
     let typ = typedef (ptr void) "CFArrayRef"
 
@@ -503,8 +470,7 @@ module C(F: Cstubs.FOREIGN) = struct
         CFArrayRef theArray
        );
     *)
-    let get_count =
-      F.(foreign "CFArrayGetCount" (typ @-> returning CFIndex.t))
+    let get_count = F.(foreign "CFArrayGetCount" (typ @-> returning CFIndex.t))
 
     (* void CFArrayGetValues (
          CFArrayRef theArray,
@@ -513,12 +479,12 @@ module C(F: Cstubs.FOREIGN) = struct
        );
     *)
     let get_values =
-      F.(foreign "CFArrayGetValues" (
-        typ @->
-        CFRange.t @->
-        typedef (ptr (ptr void)) "const void **" @->
-        returning void
-      ))
+      F.(
+        foreign "CFArrayGetValues"
+          (typ
+          @-> CFRange.t
+          @-> typedef (ptr (ptr void)) "const void **"
+          @-> returning void))
 
     (* CFArrayRef CFArrayCreate (
          CFAllocatorRef allocator,
@@ -528,14 +494,12 @@ module C(F: Cstubs.FOREIGN) = struct
        );
     *)
     let create =
-      F.(foreign "CFArrayCreate" (
-        ptr_opt void @->
-        typedef (ptr (ptr void)) "const void **" @->
-        CFIndex.t @->
-        ptr_opt void @->
-        returning typ
-      ))
-
+      F.(
+        foreign "CFArrayCreate"
+          (ptr_opt void
+          @-> typedef (ptr (ptr void)) "const void **"
+          @-> CFIndex.t
+          @-> ptr_opt void
+          @-> returning typ))
   end
-
 end

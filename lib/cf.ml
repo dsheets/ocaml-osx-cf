@@ -17,73 +17,59 @@
  *)
 
 open Ctypes
-
-module T = Types.C(Types_detected)
-module C = Bindings.C(Generated)
-
+module T = Types.C (Types_detected)
+module C = Bindings.C (Generated)
 module CamlBytes = Bytes
 
 module Obj = struct
-  type 'a t = <
-    cf : 'a;
-    retain : unit;
-    release : unit;
-  >
+  type 'a t = < cf : 'a ; retain : unit ; release : unit >
 end
 
 module type PTR_TYP = sig
-
   type t
 
   val typ : t typ
-
 end
 
 module Type = struct
-
   let release = C.CFType.release
 
   let retain = C.CFType.retain
 end
 
 module VoidPtr = struct
-
   type t = unit ptr
 
   let typ = ptr void
-
 end
 
 let uint8_0 = Unsigned.UInt8.zero
 
 module String = struct
-
   module Encoding = C.CFString.Encoding
 
   let ascii = Encoding.ASCII
 
   type t = unit ptr
+
   type cfstring = t
 
   let typ = ptr void
 
   module Bytes = struct
-
     type t = bytes
 
     let to_bytes t =
       let n = C.CFString.get_length t in
-      if n = 0
-      then Bytes.empty
+      if n = 0 then Bytes.empty
       else
-        let r = C.CFRange.({ location = 0; length = n }) in
+        let r = C.CFRange.{ location = 0; length = n } in
         let size_ptr = allocate_n C.CFIndex.t ~count:1 in
         let size = Some size_ptr in
         let chars =
           C.CFString.get_bytes_ptr t r ascii uint8_0 false None 0 size
         in
-        if chars = 0
-        then failwith "Cf.String.to_bytes failed"
+        if chars = 0 then failwith "Cf.String.to_bytes failed"
         else
           let size = !@size_ptr in
           let b = Bytes.create size in
@@ -102,11 +88,9 @@ module String = struct
       cf
 
     let typ = view ~read:to_bytes ~write:of_bytes C.CFString.typ
-
   end
 
   module String = struct
-
     type t = string
 
     let to_string t = CamlBytes.to_string (Bytes.to_bytes t)
@@ -114,20 +98,16 @@ module String = struct
     let of_string s = Bytes.of_bytes (CamlBytes.of_string s)
 
     let typ = view ~read:to_string ~write:of_string C.CFString.typ
-
   end
-
 end
 
 module Array = struct
-
   type t = unit ptr
+
   type cfarray = t
 
   module CArray = struct
-
-    module Make(T : PTR_TYP) = struct
-
+    module Make (T : PTR_TYP) = struct
       type t = T.t CArray.t
 
       let read t =
@@ -146,10 +126,9 @@ module Array = struct
         cf
 
       let typ = view ~read ~write C.CFArray.typ
-
     end
 
-    module VoidPtrCArray = Make(VoidPtr)
+    module VoidPtrCArray = Make (VoidPtr)
 
     type t = VoidPtrCArray.t
 
@@ -158,16 +137,13 @@ module Array = struct
     let of_carray = VoidPtrCArray.write
 
     let typ = VoidPtrCArray.typ
-
   end
 
   module List = struct
-
-    module Make(T : PTR_TYP) = struct
-
+    module Make (T : PTR_TYP) = struct
       type t = T.t list
 
-      module CArrayM = CArray.Make(T)
+      module CArrayM = CArray.Make (T)
 
       let read t =
         let n = Ctypes.CArray.length t in
@@ -180,17 +156,18 @@ module Array = struct
       let write list =
         let count = List.length list in
         let m = allocate_n T.typ ~count in
-        ignore (List.fold_left (fun p next ->
-          p <-@ next;
-          p +@ 1
-        ) m list);
+        ignore
+          (List.fold_left
+             (fun p next ->
+               p <-@ next;
+               p +@ 1)
+             m list);
         Ctypes.CArray.from_ptr m count
 
       let typ = view ~read ~write CArrayM.typ
-
     end
 
-    module VoidPtrList = Make(VoidPtr)
+    module VoidPtrList = Make (VoidPtr)
 
     type t = VoidPtrList.t
 
@@ -199,50 +176,43 @@ module Array = struct
     let of_list list = CArray.of_carray (VoidPtrList.write list)
 
     let typ = VoidPtrList.typ
-
   end
-
 end
 
 module Index = struct
-
   type t = int
 
   let typ = C.CFIndex.t
-
 end
 
 module TimeInterval = struct
-
   type t = float
 
   let typ = C.CFTimeInterval.typ
-
 end
 
 module Allocator = struct
-
   type retain_callback_t = unit ptr -> unit ptr
+
   type release_callback_t = unit ptr -> unit
+
   type copy_description_callback_t = unit ptr -> bytes
 
   let retain_callback_typ = Foreign.funptr (ptr void @-> returning (ptr void))
+
   let release_callback_typ = Foreign.funptr (ptr void @-> returning void)
+
   let copy_description_callback_typ =
     Foreign.funptr (ptr void @-> returning String.Bytes.typ)
-
 end
 
 module RunLoop = struct
-
   module Mode = struct
-    type t =
-      | Default
-      | CommonModes
-      | Mode of string
+    type t = Default | CommonModes | Mode of string
 
-    let default = !@ C.CFRunLoop.Mode.default
-    let common_modes = !@ C.CFRunLoop.Mode.common_modes
+    let default = !@C.CFRunLoop.Mode.default
+
+    let common_modes = !@C.CFRunLoop.Mode.common_modes
 
     let of_cfstring s =
       if s = default then Default
@@ -255,7 +225,6 @@ module RunLoop = struct
       | Mode s -> String.Bytes.of_bytes (Bytes.of_string s)
 
     let typ = view ~read:of_cfstring ~write:to_cfstring String.typ
-
   end
 
   module Observer = struct
@@ -282,31 +251,33 @@ module RunLoop = struct
       callback :
         unit Ctypes_static.ptr ->
         C.CFRunLoop.Observer.Activity.t ->
-        unit ptr -> unit;
+        unit ptr ->
+        unit;
       repeats : repeats;
     }
 
-    let create activities ?(repeats=true) ?(order=0) callback =
+    let create activities ?(repeats = true) ?(order = 0) callback =
       let repeats_t, callback =
-        if repeats
-        then Repeats, (fun _runloop activity _info -> callback activity)
+        if repeats then
+          (Repeats, fun _runloop activity _info -> callback activity)
         else
           let on_complete = ref [] in
-          Oneshot on_complete,
-          (fun _runloop activity _info ->
-             callback activity;
-             List.iter (fun f -> f ()) !on_complete
-          )
+          ( Oneshot on_complete,
+            fun _runloop activity _info ->
+              callback activity;
+              List.iter (fun f -> f ()) !on_complete )
       in
-      let cf = C.CFRunLoop.Observer.(
-        create None activities repeats order callback None
-      ) in
+      let cf =
+        C.CFRunLoop.Observer.(
+          create None activities repeats order callback None)
+      in
       Gc.finalise Type.release cf;
-      { observer = cf; callback; repeats = repeats_t; }
+      { observer = cf; callback; repeats = repeats_t }
 
     let invalidate { observer; _ } = C.CFRunLoop.Observer.invalidate observer
 
-    let on_complete observer f = match observer.repeats with
+    let on_complete observer f =
+      match observer.repeats with
       | Repeats -> ()
       | Oneshot list_ref -> list_ref := f :: !list_ref
   end
@@ -321,15 +292,12 @@ module RunLoop = struct
       | HandledSource -> "HandledSource"
   end
 
-  type attachment =
-    | Observer of Observer.t Obj.t
+  type attachment = Observer of Observer.t Obj.t
 
-  type t = {
-    runloop : unit ptr;
-    mutable attachments : attachment list;
-  }
+  type t = { runloop : unit ptr; mutable attachments : attachment list }
 
-  let typ = view
+  let typ =
+    view
       ~read:(fun runloop -> { runloop; attachments = [] })
       ~write:(fun { runloop; _ } -> runloop)
       C.CFRunLoop.typ
@@ -342,28 +310,32 @@ module RunLoop = struct
     let rl = runloop.runloop in
     let obs = observer.Observer.observer in
     C.CFRunLoop.remove_observer rl obs mode;
-    runloop.attachments <- List.filter (function
-      | Observer obj -> obj#cf.Observer.observer <> obs
-    ) runloop.attachments
+    runloop.attachments <-
+      List.filter
+        (function Observer obj -> obj#cf.Observer.observer <> obs)
+        runloop.attachments
 
   let add_observer runloop observer mode =
     let rl = runloop.runloop in
     let obs = observer.Observer.observer in
-    let obj = object
-      method cf = observer
-      method release = remove_observer runloop observer mode
-      method retain = ()
-    end in
+    let obj =
+      object
+        method cf = observer
+
+        method release = remove_observer runloop observer mode
+
+        method retain = ()
+      end
+    in
     attach runloop (Observer obj);
     Observer.on_complete observer (fun () ->
-      remove_observer runloop observer mode
-    );
+        remove_observer runloop observer mode);
     let mode = Mode.to_cfstring mode in
     C.CFRunLoop.add_observer rl obs mode
 
   let run = C.CFRunLoop.run
 
-  let run_in_mode ?(return_after_source_handled=false) ?(seconds=0.) mode =
+  let run_in_mode ?(return_after_source_handled = false) ?(seconds = 0.) mode =
     let mode = Mode.to_cfstring mode in
     C.CFRunLoop.run_in_mode mode seconds return_after_source_handled
 
@@ -374,9 +346,7 @@ module RunLoop = struct
   let stop { runloop; _ } = C.CFRunLoop.stop runloop
 
   let release rl =
-    List.iter (function
-      | Observer obj -> obj#release
-    ) rl.attachments;
+    List.iter (function Observer obj -> obj#release) rl.attachments;
     rl.attachments <- [];
     Type.release rl.runloop
 end
